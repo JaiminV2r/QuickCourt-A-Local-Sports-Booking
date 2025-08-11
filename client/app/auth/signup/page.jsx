@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useRegisterMutation, useVerifyOtpMutation } from "../../../actions/auth"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useRegisterMutation, useVerifyOtpMutation, useRolesQuery, useSendOtpMutation } from "../../../actions/auth"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
 import { Formik, Form } from "formik"
 import TextField from "../../../components/formik/TextField"
 import { signupSchema } from "../../../validation/schemas"
 import { toast } from "react-toastify"
+import { useAuth } from "../../../contexts/auth-context"
 
 export default function SignupPage() {
   const [step, setStep] = useState(1) // 1: Form, 2: OTP
@@ -20,26 +21,68 @@ export default function SignupPage() {
     role: "",
   })
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
+  const [verifying, setVerifying] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const registerMutation = useRegisterMutation()
   const verifyOtpMutation = useVerifyOtpMutation()
+  const sendOtpMutation = useSendOtpMutation()
+  const { data: roles = [], isLoading: rolesLoading } = useRolesQuery()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/")
+    }
+  }, [user, router])
+
+  useEffect(() => {
+    const stepParam = searchParams?.get('step')
+    const emailParam = searchParams?.get('email')
+    if (stepParam === '2') {
+      setStep(2)
+      if (emailParam) {
+        setFormData((prev) => ({ ...prev, email: emailParam }))
+      }
+    }
+  }, [searchParams])
 
 
 
-  const handleOtpChange = (index, value) => {
-    if (value.length <= 1) {
-      const newOtp = [...otp]
-      newOtp[index] = value
-      setOtp(newOtp)
+  const handleOtpChange = async (index, value) => {
+    if (value.length > 1) return
+    const newOtp = [...otp]
+    newOtp[index] = value
+    setOtp(newOtp)
 
-      // Auto-focus next input
-      if (value && index < 5) {
-        const nextInput = document.getElementById(`otp-${index + 1}`)
-        if (nextInput) nextInput.focus()
+    // Auto-focus next input
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`)
+      if (nextInput) nextInput.focus()
+    }
+
+    // Auto-verify when 6 digits entered
+    const code = newOtp.join("")
+    if (code.length === 6 && newOtp.every((d) => d !== "") && !verifying) {
+      setVerifying(true)
+      try {
+        const res = await verifyOtpMutation.mutateAsync({ email: formData.email, otp: code })
+        if (res?.success && res?.data?.user) {
+          toast.success("Account created. Email verified.")
+          router.replace("/")
+        } else {
+          const message = res?.message || 'OTP invalid'
+          toast.error(message)
+        }
+      } catch (err) {
+        const message = err?.response?.data?.message || 'OTP verification failed'
+        toast.error(message)
+      } finally {
+        setVerifying(false)
       }
     }
   }
@@ -64,25 +107,13 @@ export default function SignupPage() {
     }
   }
 
-  const handleOTPSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-
-    const otpString = otp.join("")
-
+  const handleResendOtp = async () => {
     try {
-      const res = await verifyOtpMutation.mutateAsync({ email: formData.email, otp: otpString })
-      if (res?.success && res?.data?.user) {
-        toast.success("Account created. Email verified.")
-        router.replace("/")
-      } else {
-        throw new Error(res?.message || 'OTP invalid')
-      }
+      await sendOtpMutation.mutateAsync({ email: formData.email })
+      toast.success('OTP sent to your email')
     } catch (err) {
-      const message = err?.response?.data?.message || "Failed to verify OTP. Please try again."
+      const message = err?.response?.data?.message || 'Failed to send OTP'
       toast.error(message)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -135,30 +166,26 @@ export default function SignupPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Account Type</label>
                     <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFieldValue('role', '6899b352da334038dbe9c001')}
-                        className={`p-4 border-2 rounded-xl text-left transition-all ${
-                          values.role === '6899b352da334038dbe9c001'
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="font-semibold">Player</div>
-                        <div className="text-sm text-gray-600">Book and play sports</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFieldValue('role', '6899b352da334038dbe9c004')}
-                        className={`p-4 border-2 rounded-xl text-left transition-all ${
-                          values.role === '6899b352da334038dbe9c004'
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="font-semibold">Owner</div>
-                        <div className="text-sm text-gray-600">Manage facilities</div>
-                      </button>
+                      {(rolesLoading ? [{ _id: 'loading-1', role: 'Loading...' }, { _id: 'loading-2', role: 'Loading...' }] : roles)?.map((r) => (
+                        <button
+                          key={r._id}
+                          type="button"
+                          onClick={() => !rolesLoading && setFieldValue('role', r._id)}
+                          disabled={rolesLoading}
+                          className={`p-4 border-2 rounded-xl text-left transition-all ${
+                            values.role === r._id
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="font-semibold">{r.role}</div>
+                          {r.role?.toLowerCase().includes('owner') ? (
+                            <div className="text-sm text-gray-600">Manage facilities</div>
+                          ) : (
+                            <div className="text-sm text-gray-600">Book and play sports</div>
+                          )}
+                        </button>
+                      ))}
                     </div>
                     {errors.role && (touched.role || submitCount > 0) && (
                       <p className="text-sm text-red-600">{errors.role}</p>
@@ -219,7 +246,7 @@ export default function SignupPage() {
               )}
             </Formik>
           ) : (
-            <form onSubmit={handleOTPSubmit} className="space-y-6">
+            <div className="space-y-6">
 
 
               <div className="text-center">
@@ -240,30 +267,13 @@ export default function SignupPage() {
                       type="text"
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
+                      disabled={verifying}
                       className="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       maxLength={1}
                     />
                   ))}
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={loading || otp.some((digit) => !digit)}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    Verify & Create Account
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
-              </button>
 
               <div className="flex items-center justify-center space-x-4 text-sm">
                 <button
@@ -275,11 +285,11 @@ export default function SignupPage() {
                   Back
                 </button>
                 <span className="text-gray-400">|</span>
-                <button type="button" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Resend Code
+                <button type="button" onClick={handleResendOtp} className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 cursor-pointer" disabled={sendOtpMutation.isPending}>
+                  {sendOtpMutation.isPending ? 'Sending...' : 'Resend Code'}
                 </button>
               </div>
-            </form>
+            </div>
           )}
 
           {step === 1 && (

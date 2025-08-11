@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLoginMutation } from "../../../actions/auth"
 import Link from "next/link"
@@ -9,6 +9,7 @@ import { Formik, Form } from "formik"
 import TextField from "../../../components/formik/TextField"
 import { loginSchema } from "../../../validation/schemas"
 import { toast } from "react-toastify"
+import { useAuth } from "../../../contexts/auth-context"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -16,6 +17,13 @@ export default function LoginPage() {
 
   const loginMutation = useLoginMutation()
   const router = useRouter()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/")
+    }
+  }, [user, router])
 
   const handleSubmit = async (values) => {
     setLoading(true)
@@ -24,6 +32,9 @@ export default function LoginPage() {
       if (res?.success && res?.data?.user) {
         toast.success("Signed in. Welcome back!")
         router.replace("/")
+      } else if (res?.success && res?.isEmailNotVerify) {
+        toast.info('OTP sent to your email')
+        router.replace(`/auth/signup?email=${encodeURIComponent(values.email)}&step=2`)
       } else {
         const message = res?.message || "Login failed"
         toast.error(message)

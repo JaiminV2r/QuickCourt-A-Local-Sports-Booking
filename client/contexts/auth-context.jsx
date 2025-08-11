@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
-import { useLoginMutation, useRegisterMutation, useVerifyOtpMutation } from "../actions/auth"
+import { useLoginMutation, useRegisterMutation, useVerifyOtpMutation, useLogoutMutation } from "../actions/auth"
 
 const AuthContext = createContext()
 
@@ -32,6 +32,7 @@ export function AuthProvider({ children }) {
   const loginMutation = useLoginMutation()
   const registerMutation = useRegisterMutation()
   const verifyOtpMutation = useVerifyOtpMutation()
+  const logoutMutation = useLogoutMutation()
 
   useEffect(() => {
     const storedUser = localStorage.getItem("quickcourt_user")
@@ -39,32 +40,25 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  function decodeAccessTokenRole(accessToken) {
-    if (!accessToken) return null
-    try {
-      const [, payload] = accessToken.split('.')
-      const json = JSON.parse(atob(payload))
-      const role = json?.role
-      if (!role) return null
-      const roleLower = (role || '').toString().toLowerCase()
-      if (roleLower.includes('admin')) return 'admin'
-      if (roleLower.includes('owner')) return 'owner'
-      if (roleLower.includes('facility')) return 'owner'
-      return 'player'
-    } catch {
-      return null
-    }
+  function normalizeRoleFromUser(apiUser) {
+    const apiRole = apiUser?.role
+    if (!apiRole) return null
+    const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
+    const s = base.toString().toLowerCase()
+    if (s.includes('admin')) return 'admin'
+    if (s.includes('owner') || s.includes('facility')) return 'owner'
+    return 'player'
   }
 
   const login = async (email, password) => {
     const res = await loginMutation.mutateAsync({ email, password })
     if (res?.data?.user) {
-      const u = res.data.user
-      setUser(u)
-      const accessToken = res?.data?.tokens?.access?.token
-      const roleKey = decodeAccessTokenRole(accessToken) || 'player'
-      setAuthCookie({ id: u._id, name: u.full_name, email: u.email, role: roleKey })
-      return u
+      const apiUser = res.data.user
+      const roleKey = normalizeRoleFromUser(apiUser) || 'player'
+      const userForState = { ...apiUser, role: roleKey }
+      setUser(userForState)
+      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
+      return userForState
     }
     // When email not verified, server responds with success true and message, but no data.user
     return null
@@ -75,20 +69,32 @@ export function AuthProvider({ children }) {
     return registerMutation.mutateAsync(payload)
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("quickcourt_user")
-    clearAuthCookie()
+  const logout = async () => {
+    try {
+      const stored = localStorage.getItem('quickcourt_auth')
+      const parsed = stored ? JSON.parse(stored) : null
+      const refreshToken = parsed?.tokens?.refresh?.token
+      if (refreshToken) {
+        await logoutMutation.mutateAsync({ refresh_token: refreshToken })
+      }
+    } catch {
+      // ignore errors on logout
+    } finally {
+      setUser(null)
+      localStorage.removeItem('quickcourt_user')
+      localStorage.removeItem('quickcourt_auth')
+      clearAuthCookie()
+    }
   }
 
   const verifyOTP = async ({ email, otp }) => {
     const res = await verifyOtpMutation.mutateAsync({ email, otp })
     if (res?.data?.user) {
-      const u = res.data.user
-      setUser(u)
-      const accessToken = res?.data?.tokens?.access?.token
-      const roleKey = decodeAccessTokenRole(accessToken) || 'player'
-      setAuthCookie({ id: u._id, name: u.full_name, email: u.email, role: roleKey })
+      const apiUser = res.data.user
+      const roleKey = normalizeRoleFromUser(apiUser) || 'player'
+      const userForState = { ...apiUser, role: roleKey }
+      setUser(userForState)
+      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
       return true
     }
     return false

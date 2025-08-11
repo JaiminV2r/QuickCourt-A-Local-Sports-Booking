@@ -32,6 +32,16 @@ function getRedirectForRole(role) {
 export function middleware(request) {
   const { pathname } = request.nextUrl
 
+  // Redirect authenticated users away from guest-only routes
+  const isGuestOnly = pathname === '/auth/login' || pathname === '/auth/signup'
+  const userCookieValue = request.cookies.get('quickcourt_user')?.value
+  const userFromCookie = userCookieValue ? parseUserCookie(userCookieValue) : null
+
+  if (isGuestOnly && userFromCookie) {
+    const redirectUrl = new URL(getRedirectForRole(userFromCookie.role), request.url)
+    return NextResponse.redirect(redirectUrl)
+  }
+
   const allowedRoles = getAllowedRoles(pathname)
   if (!allowedRoles) return NextResponse.next()
 
@@ -53,5 +63,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/owner/:path*', '/my-bookings/:path*', '/profile/:path*'],
+  matcher: ['/admin/:path*', '/owner/:path*', '/my-bookings/:path*', '/profile/:path*', '/auth/login', '/auth/signup'],
 }

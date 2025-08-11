@@ -5,6 +5,27 @@ import { get, post } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
+function computeRoleKey(apiRole) {
+  const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
+  const s = base.toString().toLowerCase()
+  if (s.includes('admin')) return 'admin'
+  if (s.includes('owner') || s.includes('facility')) return 'owner'
+  return 'player'
+}
+
+function setUserCookie(user) {
+  try {
+    const cookieValue = {
+      id: user._id || user.id,
+      name: user.full_name || user.name,
+      email: user.email,
+      role: user.role,
+    }
+    const value = encodeURIComponent(JSON.stringify(cookieValue))
+    document.cookie = `quickcourt_user=${value}; path=/; max-age=${7 * 24 * 60 * 60}`
+  } catch {}
+}
+
 export function useMeQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.auth,
@@ -17,6 +38,19 @@ export function useMeQuery(enabled = true) {
   })
 }
 
+export function useRolesQuery(options = {}) {
+  return useQuery({
+    queryKey: ['auth', 'roles'],
+    queryFn: async () => {
+      const res = await get(endpoints.auth.roles)
+      // Expecting { success, data: [{ _id, role, ... }] }
+      return Array.isArray(res?.data) ? res.data : []
+    },
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  })
+}
+
 export function useLoginMutation() {
   const qc = useQueryClient()
   return useMutation({
@@ -24,9 +58,14 @@ export function useLoginMutation() {
     onSuccess: (res) => {
       // If user is verified, server returns data.user and tokens
       if (res?.data?.user && res?.data?.tokens) {
-        const auth = { user: res.data.user, tokens: res.data.tokens }
+        // Normalize user role to simple key: 'admin' | 'owner' | 'player'
+        const apiUser = res.data.user
+        const normalizedRole = computeRoleKey(apiUser?.role)
+        const userForStore = { ...apiUser, role: normalizedRole }
+        const auth = { user: userForStore, tokens: res.data.tokens }
         localStorage.setItem('quickcourt_auth', JSON.stringify(auth))
-        localStorage.setItem('quickcourt_user', JSON.stringify(res.data.user))
+        localStorage.setItem('quickcourt_user', JSON.stringify(userForStore))
+        setUserCookie(userForStore)
         qc.invalidateQueries({ queryKey: queryKeys.auth })
       }
     },
@@ -45,12 +84,28 @@ export function useVerifyOtpMutation() {
     mutationFn: (payload) => post(endpoints.auth.verifyOtp, payload),
     onSuccess: (res) => {
       if (res?.data?.user && res?.data?.tokens) {
-        const auth = { user: res.data.user, tokens: res.data.tokens }
+        const apiUser = res.data.user
+        const normalizedRole = computeRoleKey(apiUser?.role)
+        const userForStore = { ...apiUser, role: normalizedRole }
+        const auth = { user: userForStore, tokens: res.data.tokens }
         localStorage.setItem('quickcourt_auth', JSON.stringify(auth))
-        localStorage.setItem('quickcourt_user', JSON.stringify(res.data.user))
+        localStorage.setItem('quickcourt_user', JSON.stringify(userForStore))
+        setUserCookie(userForStore)
         qc.invalidateQueries({ queryKey: queryKeys.auth })
       }
     },
+  })
+}
+
+export function useSendOtpMutation() {
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.sendOtp, payload),
+  })
+}
+
+export function useLogoutMutation() {
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.logout, payload),
   })
 }
 

@@ -3,6 +3,9 @@ export const endpoints = {
     login: '/auth/login',
     register: '/auth/register',
     verifyOtp: '/auth/verify-otp',
+    roles: '/auth/roles',
+    sendOtp: '/auth/send-otp',
+    logout: '/auth/logout',
   },
   admin: {
     stats: '/api/admin/stats',

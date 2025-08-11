@@ -12,11 +12,6 @@ export const loginSchema = Yup.object({
     .required('Password is required'),
 })
 
-const allowedRoleIds = [
-  '6899b352da334038dbe9c001', // Player
-  '6899b352da334038dbe9c004', // Owner
-]
-
 export const signupSchema = Yup.object({
   full_name: Yup.string().min(2, 'Enter your full name').required('Full name is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
@@ -26,9 +21,7 @@ export const signupSchema = Yup.object({
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
     .required('Please confirm your password'),
-  role: Yup.string()
-    .oneOf(allowedRoleIds, 'Please select Account Type')
-    .required('Account Type is required'),
+  role: Yup.string().required('Account Type is required'),
 })
 
 export const otpSchema = Yup.object({
