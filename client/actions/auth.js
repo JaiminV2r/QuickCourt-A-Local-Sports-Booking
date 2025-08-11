@@ -117,16 +117,4 @@ export async function ensureMockMe(user) {
   return user
 }
 
-// Admin: mock me endpoint if backend not present
-export async function ensureMockMe(user) {
-  if (typeof window === 'undefined') return user
-  try {
-    const stored = localStorage.getItem('quickcourt_user')
-    if (!stored && user) {
-      localStorage.setItem('quickcourt_user', JSON.stringify(user))
-    }
-  } catch {}
-  return user
-}
-
 
