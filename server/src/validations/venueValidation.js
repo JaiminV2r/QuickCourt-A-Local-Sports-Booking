@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { VENUE_STATUS, SPORT_TYPE } = require('../helper/constant.helper');
 const { objectId } = require('./custom.validation');
+
 /**
  * All venue validations are exported from here 👇
  */
@@ -13,9 +14,7 @@ module.exports = {
             .keys({
                 venue_name: Joi.string().trim().min(2).max(120).required(),
                 description: Joi.string().allow('', null),
-
                 address: Joi.string().trim().min(1).required(),
-
                 city: Joi.string().trim().min(1).required(),
 
                 // GeoJSON Point: [lng, lat]
@@ -34,7 +33,6 @@ module.exports = {
                 sports: Joi.array().items(Joi.string().trim()).max(20).default([]),
                 amenities: Joi.array().items(Joi.string().trim()).max(50).default([]),
                 about: Joi.string().allow('', null),
-
                 venue_type: Joi.string()
                     .valid('indoor', 'outdoor', 'turf', 'hybrid')
                     .default('indoor'),
@@ -53,6 +51,7 @@ module.exports = {
             venue_status: Joi.string()
                 .valid(...Object.values(VENUE_STATUS))
                 .optional(),
+            sort_by: Joi.string().trim().allow(''),
         }),
     },
     getVenue: {
@@ -70,7 +69,6 @@ module.exports = {
                         sport_type: Joi.string()
                             .valid(...SPORT_TYPE)
                             .required(),
-                        operating_hours: Joi.string().min(5).max(50).required(), // Ensure operating hours format like "9 AM to 5 PM"
                         availability: Joi.array()
                             .items(
                                 Joi.object().keys({
@@ -108,40 +106,64 @@ module.exports = {
         }),
     },
 
-    updateCourt: Joi.object().keys({
-        court_name: Joi.string().min(2).max(120).optional(),
-        sport_type: Joi.string().valid(...SPORT_TYPE).optional(),
-        pricing_per_hour: Joi.number().min(0).optional(),
-        operating_hours: Joi.string().min(5).max(50).optional(),
-        availability: Joi.array()
-            .items(
-                Joi.object().keys({
-                    day_of_week: Joi.string()
-                        .valid(
-                            'Monday',
-                            'Tuesday',
-                            'Wednesday',
-                            'Thursday',
-                            'Friday',
-                            'Saturday',
-                            'Sunday'
-                        )
-                        .required(),
-                    time_slots: Joi.array()
-                        .items(
-                            Joi.object().keys({
-                                start_time: Joi.string()
-                                    .pattern(/^(0[1-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/)
-                                    .required(),
-                                end_time: Joi.string()
-                                    .pattern(/^(0[1-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/)
-                                    .required(),
-                                price: Joi.number().min(0).required(),
-                            })
-                        )
-                        .required(),
-                })
-            )
-            .optional(),
-    }),
+    updateCourt: {
+        params: Joi.object().keys({
+            court_id: Joi.string().custom(objectId).required(),
+        }),
+        body: Joi.object().keys({
+            court_name: Joi.string().min(2).max(120).optional(),
+            sport_type: Joi.string()
+                .valid(...SPORT_TYPE)
+                .optional(),
+            availability: Joi.array()
+                .items(
+                    Joi.object().keys({
+                        day_of_week: Joi.string()
+                            .valid(
+                                'Monday',
+                                'Tuesday',
+                                'Wednesday',
+                                'Thursday',
+                                'Friday',
+                                'Saturday',
+                                'Sunday'
+                            )
+                            .required(),
+                        time_slots: Joi.array()
+                            .items(
+                                Joi.object().keys({
+                                    start_time: Joi.string()
+                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
+                                        .required(),
+                                    end_time: Joi.string()
+                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
+                                        .required(),
+                                    price: Joi.number().min(0).required(),
+                                })
+                            )
+                            .required(),
+                    })
+                )
+                .optional(),
+        }),
+    },
+
+    /**
+     * Common validation for updating venue status (approve/reject).
+     */
+    updateVenueStatus: {
+        params: Joi.object().keys({
+            venueId: Joi.string().required(),
+        }),
+        body: Joi.object().keys({
+            status: Joi.string()
+                .valid(...Object.values(VENUE_STATUS))
+                .required()
+                .messages({
+                    'any.only': 'Status must be one of: pending, approved, rejected',
+                    'any.required': 'Status is required',
+                }),
+            reason: Joi.string().trim().optional(),
+        }),
+    },
 };

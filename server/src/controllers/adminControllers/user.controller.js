@@ -34,7 +34,6 @@ module.exports = {
         res.status(httpStatus.OK).json({
             success: true,
             message: 'Get all user successfully',
-
             data: await userService.getAll(filter, options),
         });
     }),
