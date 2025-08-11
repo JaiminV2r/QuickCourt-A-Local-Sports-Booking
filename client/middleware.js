@@ -8,33 +8,32 @@ function parseUserCookie(cookieValue) {
   }
 }
 
-// Centralized route-to-roles map
-const routeRoles = [
-  { matcher: /^\/admin(\/.*)?$/, roles: ['admin'] },
-  { matcher: /^\/owner(\/.*)?$/, roles: ['owner'] },
-  { matcher: /^\/(my-bookings|profile|venues)(\/.*)?$/, roles: ['player', 'owner', 'admin'] },
-]
+const PROTECTED_ROUTES = {
+  '/admin': ['admin'],
+  '/owner': ['owner'],
+  '/my-bookings': ['player', 'owner', 'admin'],
+  '/profile': ['player', 'owner', 'admin'],
+}
 
-function getAllowedRolesForPath(pathname) {
-  for (const entry of routeRoles) {
-    if (entry.matcher.test(pathname)) return entry.roles
+function getAllowedRoles(pathname) {
+  for (const base in PROTECTED_ROUTES) {
+    if (pathname === base || pathname.startsWith(base + '/')) {
+      return PROTECTED_ROUTES[base]
+    }
   }
-  return null // public route
+  return null
 }
 
 function getRedirectForRole(role) {
-  if (role === 'admin') return '/admin'
-  if (role === 'owner') return '/owner'
-  return '/'
+  const roleToPath = { admin: '/admin', owner: '/owner' }
+  return roleToPath[role] || '/'
 }
 
 export function middleware(request) {
   const { pathname } = request.nextUrl
 
-  const allowedRoles = getAllowedRolesForPath(pathname)
-  if (!allowedRoles) {
-    return NextResponse.next()
-  }
+  const allowedRoles = getAllowedRoles(pathname)
+  if (!allowedRoles) return NextResponse.next()
 
   const userCookie = request.cookies.get('quickcourt_user')?.value
   const user = userCookie ? parseUserCookie(userCookie) : null
@@ -54,11 +53,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: [
-    '/admin/:path*',
-    '/owner/:path*',
-    '/my-bookings/:path*',
-    '/profile/:path*',
-    '/venues/:path*',
-  ],
+  matcher: ['/admin/:path*', '/owner/:path*', '/my-bookings/:path*', '/profile/:path*'],
 }
