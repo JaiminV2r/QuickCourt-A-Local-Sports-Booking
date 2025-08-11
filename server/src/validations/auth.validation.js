@@ -83,4 +83,13 @@ module.exports = {
             new_password: Joi.string().custom(password).required(),
         }),
     },
+
+    /**
+     * update user
+     */
+updateUser: {
+    body: Joi.object().keys({
+        full_name: Joi.string().trim().max(50).optional(),
+    }),
+}
 };
