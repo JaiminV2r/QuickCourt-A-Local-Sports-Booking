@@ -16,8 +16,8 @@ const CourtSchema = new Schema({
       day_of_week: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], required: true },
       time_slots: [
         {
-          start_time: { type: String, required: true }, // Example: "07:00 AM"
-          end_time: { type: String, required: true },   // Example: "10:00 AM"
+          start_time: { type: Date, required: true }, // Example: "2023-03-15T07:00:00Z"
+          end_time: { type: Date, required: true },   // Example: "2023-03-15T10:00:00Z"
           price: { type: Number, required: true },
           is_maintenance: { type: Boolean, default: false }  // Whether the time slot is blocked for maintenance
         }

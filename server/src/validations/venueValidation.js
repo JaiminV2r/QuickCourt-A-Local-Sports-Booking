@@ -9,23 +9,22 @@ module.exports = {
     /**
      * Create venue (Facility Owner).
      */
-    createVenue: {
-        body: Joi.object()
-            .keys({
-                venue_name: Joi.string().trim().min(2).max(120).required(),
-                description: Joi.string().allow('', null),
-                address: Joi.string().trim().min(1).required(),
-                city: Joi.string().trim().min(1).required(),
-
-                sports: Joi.array().items(Joi.string().trim()).max(20).default([]),
-                amenities: Joi.array().items(Joi.string().trim()).max(50).default([]),
-                about: Joi.string().allow('', null),
-                venue_type: Joi.string()
-                    .valid('indoor', 'outdoor', 'turf', 'hybrid')
-                    .default('indoor'),
-            })
-            .required(),
-    },
+        createVenue: {
+            body: Joi.object()
+                .keys({
+                    venue_name: Joi.string().trim().min(2).max(120).required(),
+                    description: Joi.string().allow('', null),
+                    address: Joi.string().trim().min(1).required(),
+                    city: Joi.string().trim().min(1).required(),
+                    sports: Joi.array().items(Joi.string().trim()).max(20).default([]),
+                    amenities: Joi.array().items(Joi.string().trim()).max(50).default([]),
+                    about: Joi.string().allow('', null),
+                    venue_type: Joi.string()
+                        .valid('indoor', 'outdoor', 'turf', 'hybrid')
+                        .default('indoor'),
+                })
+                .required(),
+        },
 
     /**
      * Get venue list (with filters for Venues Page).
@@ -80,12 +79,8 @@ module.exports = {
                                     time_slots: Joi.array()
                                         .items(
                                             Joi.object().keys({
-                                                start_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
-                                                end_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
+                                                start_time: Joi.date().required(),
+                                                end_time: Joi.date().required(),
                                                 price: Joi.number().min(0).required(),
                                             })
                                         )
@@ -126,12 +121,8 @@ module.exports = {
                         time_slots: Joi.array()
                             .items(
                                 Joi.object().keys({
-                                    start_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
-                                    end_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
+                                    start_time: Joi.date().required(),
+                                    end_time: Joi.date().required(),
                                     price: Joi.number().min(0).required(),
                                 })
                             )
