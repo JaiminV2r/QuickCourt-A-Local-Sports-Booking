@@ -29,6 +29,10 @@ export const queryKeys = {
     all: ['facilities'],
     detail: (id) => ['facilities', id],
   },
+  venues: {
+    all: ['venues'],
+    detail: (id) => ['venues', id],
+  },
   bookings: {
     all: ['bookings'],
     detail: (id) => ['bookings', id],
