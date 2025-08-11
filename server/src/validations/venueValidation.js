@@ -17,19 +17,6 @@ module.exports = {
                 address: Joi.string().trim().min(1).required(),
                 city: Joi.string().trim().min(1).required(),
 
-                // GeoJSON Point: [lng, lat]
-                location: Joi.object()
-                    .keys({
-                        type: Joi.string().valid('Point').default('Point'),
-                        coordinates: Joi.array()
-                            .items(
-                                Joi.number().min(-180).max(180), // lng
-                                Joi.number().min(-90).max(90) // lat
-                            )
-                            .length(2),
-                    })
-                    .optional(),
-
                 sports: Joi.array().items(Joi.string().trim()).max(20).default([]),
                 amenities: Joi.array().items(Joi.string().trim()).max(50).default([]),
                 about: Joi.string().allow('', null),

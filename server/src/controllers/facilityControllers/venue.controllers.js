@@ -17,7 +17,6 @@ module.exports = {
             description: req.body.description || '',
             address: req.body.address,
             city: req.body.city,
-            location: req.body.location, // { type:'Point', coordinates:[lng,lat] } optional
             sports: req.body.sports || [],
             amenities: req.body.amenities || [],
             about: req.body.about || null,
@@ -60,9 +59,8 @@ module.exports = {
     // Implementing the update function for venue update
     updateVenue: catchAsync(async (req, res) => {
         const { id } = req.params;
-
         // Find the venue by ID
-        let venue = await venueService.get(id);
+        let venue = await venueService.get({ _id: new mongoose.Types.ObjectId(id)});
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -75,7 +73,6 @@ module.exports = {
         venue.description = req.body.description || venue.description;
         venue.address = req.body.address || venue.address;
         venue.city = req.body.city || venue.city;
-        venue.location = req.body.location || venue.location;
         venue.sports = req.body.sports || venue.sports;
         venue.amenities = req.body.amenities || venue.amenities;
         venue.about = req.body.about || venue.about;
