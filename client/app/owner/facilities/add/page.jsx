@@ -1,5 +1,7 @@
 "use client"
-import { useState } from "react"
+import Layout from "../../../../components/layout"
+import ProtectedRoute from "../../../../components/protected-route"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Plus, X, MapPin, Clock, DollarSign, Users } from "lucide-react"
 import Link from "next/link"
@@ -7,7 +9,6 @@ import { useSearchParams } from "next/navigation"
 import { Formik, Form, Field, ErrorMessage } from "formik"
 import * as Yup from "yup"
 import { facilityAddSchema } from "@/validation/schemas"
-
 
 export default function AddFacilityPage() {
   const [step, setStep] = useState(1)
@@ -22,7 +23,6 @@ export default function AddFacilityPage() {
     address: "",
     city: "",
     state: "",
-    pincode: "",
     phone: "",
     email: "",
     operatingHours: {
@@ -38,9 +38,10 @@ export default function AddFacilityPage() {
 
   const [formInitialValues, setFormInitialValues] = useState(initialValues)
 
+  const amenityInputRef = useRef(null) // Use ref to refer to the input field
+
   useEffect(() => {
     if (!isEditMode) return
-    // Simulate fetching facility by id and mapping to form values
     const mockFacility = (() => {
       if (editId === "1") {
         return {
@@ -48,7 +49,6 @@ export default function AddFacilityPage() {
           address: "123 Sports Complex, Mumbai",
           city: "Mumbai",
           state: "Maharashtra",
-          pincode: "400001",
           phone: "+91 9876543210",
           email: "",
           sports: ["Badminton", "Tennis"],
@@ -61,7 +61,6 @@ export default function AddFacilityPage() {
           address: "456 Elite Street, Delhi",
           city: "Delhi",
           state: "Delhi",
-          pincode: "110001",
           phone: "+91 9876543210",
           email: "",
           sports: ["Football", "Cricket"],
@@ -73,7 +72,6 @@ export default function AddFacilityPage() {
         address: "789 Victory Lane, Bangalore",
         city: "Bangalore",
         state: "Karnataka",
-        pincode: "560001",
         phone: "+91 9876543210",
         email: "",
         sports: ["Badminton", "Table Tennis"],
@@ -100,7 +98,6 @@ export default function AddFacilityPage() {
 
     setFormInitialValues((prev) => ({
       ...prev,
-      ...initialValues,
       ...mockFacility,
       courts: courtsFromSports,
     }))
@@ -135,8 +132,8 @@ export default function AddFacilityPage() {
   ]
 
   const handleSportToggle = (sport, setFieldValue, values) => {
-    const newSports = values.sports.includes(sport) 
-      ? values.sports.filter((s) => s !== sport) 
+    const newSports = values.sports.includes(sport)
+      ? values.sports.filter((s) => s !== sport)
       : [...values.sports, sport]
     setFieldValue('sports', newSports)
   }
@@ -154,20 +151,33 @@ export default function AddFacilityPage() {
   }
 
   const updateCourt = (courtId, field, value, setFieldValue, values) => {
-    const newCourts = values.courts.map((c) => 
+    const newCourts = values.courts.map((c) =>
       c.id === courtId ? { ...c, [field]: value } : c
     )
     setFieldValue('courts', newCourts)
   }
 
+  const handleAmenityAdd = (amenity, setFieldValue, values) => {
+    const newAmenities = [...values.amenities, amenity]
+    setFieldValue('amenities', newAmenities)
+    setFieldValue('amenityInput', "") // Clear the input field using Formik
+  }
+
+  const handleAmenityRemove = (amenity, setFieldValue, values) => {
+    const newAmenities = values.amenities.filter((a) => a !== amenity)
+    setFieldValue('amenities', newAmenities)
+  }
+
   const handleSubmit = async (values, { setSubmitting, setStatus }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      if (isEditMode) {
-        alert("Facility updated successfully.")
-      } else {
-        alert("Facility submitted for approval! You'll receive an email confirmation shortly.")
+      if (step === 1) {
+        // API call for Step 1 (Basic Info & Amenities)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        alert("Facility Basic Info & Amenities updated successfully.")
+      } else if (step === 2) {
+        // API call for Step 2 (Sports & Courts)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        alert("Facility Sports & Courts updated successfully.")
       }
       window.location.href = "/owner/facilities"
     } catch (error) {
@@ -180,11 +190,9 @@ export default function AddFacilityPage() {
   const canProceedToNext = (values, currentStep) => {
     switch (currentStep) {
       case 1:
-        return values.name && values.address && values.city && values.state && values.pincode && values.phone
+        return values.name && values.address && values.city && values.state && values.phone
       case 2:
         return values.sports.length > 0 && values.courts.length > 0
-      case 3:
-        return true
       default:
         return false
     }
@@ -195,7 +203,7 @@ export default function AddFacilityPage() {
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-center">
-          {[1, 2, 3, 4].map((stepNumber) => (
+          {[1, 2].map((stepNumber) => (
             <div key={stepNumber} className="flex items-center">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -204,7 +212,7 @@ export default function AddFacilityPage() {
               >
                 {stepNumber}
               </div>
-              {stepNumber < 4 && (
+              {stepNumber < 2 && (
                 <div className={`w-16 h-1 mx-2 ${step > stepNumber ? "bg-blue-600" : "bg-gray-200"}`} />
               )}
             </div>
@@ -212,10 +220,8 @@ export default function AddFacilityPage() {
         </div>
         <div className="flex justify-center mt-4">
           <div className="flex justify-center gap-12 text-sm">
-            <span className={step >= 1 ? "text-blue-600 font-medium" : "text-gray-500"}>Basic Info</span>
+            <span className={step >= 1 ? "text-blue-600 font-medium" : "text-gray-500"}>Basic Info & Amenities</span>
             <span className={step >= 2 ? "text-blue-600 font-medium" : "text-gray-500"}>Sports & Courts</span>
-            <span className={step >= 3 ? "text-blue-600 font-medium" : "text-gray-500"}>Amenities</span>
-            <span className={step >= 4 ? "text-blue-600 font-medium" : "text-gray-500"}>Review</span>
           </div>
         </div>
       </div>
@@ -230,16 +236,10 @@ export default function AddFacilityPage() {
       >
         {({ values, setFieldValue, errors, touched, isSubmitting, status }) => (
           <Form className="bg-white rounded-2xl shadow-sm border p-6 md:p-8">
-            {/* Step 1: Basic Information */}
+            {/* Step 1: Basic Information & Amenities */}
             {step === 1 && (
               <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <MapPin className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Basic Information</h2>
-                </div>
-
+                {/* Basic Information Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Facility Name *</label>
@@ -268,7 +268,7 @@ export default function AddFacilityPage() {
                     <ErrorMessage name="description" component="div" className="text-red-500 text-sm mt-1" />
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
                     <Field
                       type="text"
@@ -297,37 +297,14 @@ export default function AddFacilityPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
                     <Field
-                      as="select"
+                      type="text"
                       name="state"
                       className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.state && touched.state ? 'border-red-500' : 'border-gray-300'
                       }`}
-                    >
-                      <option value="">Select State</option>
-                      <option value="Maharashtra">Maharashtra</option>
-                      <option value="Delhi">Delhi</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Tamil Nadu">Tamil Nadu</option>
-                      <option value="Gujarat">Gujarat</option>
-                      <option value="Rajasthan">Rajasthan</option>
-                      <option value="West Bengal">West Bengal</option>
-                      <option value="Uttar Pradesh">Uttar Pradesh</option>
-                    </Field>
-                    <ErrorMessage name="state" component="div" className="text-red-500 text-sm mt-1" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
-                    <Field
-                      type="text"
-                      name="pincode"
-                      className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.pincode && touched.pincode ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="PIN Code"
-                      pattern="[0-9]{6}"
+                      placeholder="State"
                     />
-                    <ErrorMessage name="pincode" component="div" className="text-red-500 text-sm mt-1" />
+                    <ErrorMessage name="state" component="div" className="text-red-500 text-sm mt-1" />
                   </div>
 
                   <div>
@@ -357,6 +334,45 @@ export default function AddFacilityPage() {
                   </div>
                 </div>
 
+                {/* Amenities Selection */}
+                 {/* Amenities Input */}
+                 <div className="mb-8 mt-8">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Add Available Amenities</label>
+                  <div className="flex gap-3">
+                    <Field
+                      type="text"
+                      name="amenityInput"
+                      className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Type an amenity and press Enter"
+                      ref={amenityInputRef}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.target.value.trim()) {
+                          handleAmenityAdd(e.target.value.trim(), setFieldValue, values)
+                          e.target.value = ""
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {values.amenities.map((amenity, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center gap-2"
+                      >
+                        {amenity}
+                        <X
+                          className="w-4 h-4 cursor-pointer"
+                          onClick={() => handleAmenityRemove(amenity, setFieldValue, values)}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  {errors.amenities && touched.amenities && (
+                    <div className="text-red-500 text-sm mt-1">{errors.amenities}</div>
+                  )}
+                </div>
+
+
                 <div className="flex justify-end mt-8">
                   <button
                     type="button"
@@ -373,13 +389,7 @@ export default function AddFacilityPage() {
             {/* Step 2: Sports & Courts */}
             {step === 2 && (
               <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Users className="w-5 h-5 text-green-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Sports & Courts</h2>
-                </div>
-
+                {/* Sports & Courts Fields */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Select Sports Available *</label>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -403,6 +413,7 @@ export default function AddFacilityPage() {
                   )}
                 </div>
 
+                {/* Courts & Pricing Configuration */}
                 {values.sports.length > 0 && (
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-3">Configure Courts & Pricing</label>
@@ -485,7 +496,7 @@ export default function AddFacilityPage() {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {[
+                                      {[ 
                                         { key: "sun", label: "Sunday" },
                                         { key: "mon", label: "Monday" },
                                         { key: "tue", label: "Tuesday" },
@@ -638,6 +649,7 @@ export default function AddFacilityPage() {
                                           </tr>
                                         ))
                                       ))}
+
                                     </tbody>
                                   </table>
                                 </div>
@@ -655,280 +667,6 @@ export default function AddFacilityPage() {
                     ))}
                   </div>
                 )}
-
-                {errors.courts && touched.courts && (
-                  <div className="text-red-500 text-sm mb-4">{errors.courts}</div>
-                )}
-
-                <div className="flex justify-between mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="px-6 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    disabled={!canProceedToNext(values, 2)}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next: Amenities
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Amenities */}
-            {step === 3 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Clock className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Amenities & Features</h2>
-                </div>
-
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-4">Select Available Amenities</label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {amenitiesOptions.map((amenity) => (
-                      <label
-                        key={amenity}
-                        className="flex items-center p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={values.amenities.includes(amenity)}
-                          onChange={() => handleAmenityToggle(amenity, setFieldValue, values)}
-                          className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium">{amenity}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-4">Upload Facility Images *</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2 font-medium">Drag and drop images here, or click to browse</p>
-                    <p className="text-sm text-gray-500 mb-4">Upload at least 3 high-quality images of your facility</p>
-                    <button type="button" className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium">
-                      Choose Files
-                    </button>
-                    <p className="text-xs text-gray-400 mt-2">Supported formats: JPG, PNG, WebP (Max 5MB each)</p>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-4">Upload Required Documents</label>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Upload className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">Business License</span>
-                          <p className="text-sm text-gray-500">Required for facility verification</p>
-                        </div>
-                      </div>
-                      <button type="button" className="text-blue-600 hover:text-blue-700 text-sm font-medium px-4 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
-                        Upload
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <Upload className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">Insurance Certificate</span>
-                          <p className="text-sm text-gray-500">Public liability insurance</p>
-                        </div>
-                      </div>
-                      <button type="button" className="text-blue-600 hover:text-blue-700 text-sm font-medium px-4 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
-                        Upload
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-orange-100 rounded-lg">
-                          <Upload className="w-4 h-4 text-orange-600" />
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">Fire Safety Certificate</span>
-                          <p className="text-sm text-gray-500">Fire department clearance</p>
-                        </div>
-                      </div>
-                      <button type="button" className="text-blue-600 hover:text-blue-700 text-sm font-medium px-4 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
-                        Upload
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="px-6 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep(4)}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    {isEditMode ? "Review & Save" : "Review & Submit"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Review */}
-            {step === 4 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-green-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Review & Submit</h2>
-                </div>
-
-                {status?.error && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-red-700 text-sm">{status.error}</p>
-                  </div>
-                )}
-
-                <div className="space-y-6">
-                  <div className="p-6 bg-gray-50 rounded-xl">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Basic Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Name:</span>
-                        <div className="font-medium text-gray-900">{values.name}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">City:</span>
-                        <div className="font-medium text-gray-900">
-                          {values.city}, {values.state}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Phone:</span>
-                        <div className="font-medium text-gray-900">{values.phone}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Email:</span>
-                        <div className="font-medium text-gray-900">{values.email || "Not provided"}</div>
-                      </div>
-                      <div className="md:col-span-2">
-                        <span className="text-gray-600">Address:</span>
-                        <div className="font-medium text-gray-900">{values.address}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-gray-50 rounded-xl">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Sports & Courts
-                    </h3>
-                    <div className="space-y-4">
-                      {values.sports.map((sport) => {
-                        const sportCourts = values.courts.filter((c) => c.sport === sport)
-                        return (
-                          <div key={sport} className="bg-white p-4 rounded-lg border border-gray-200">
-                            <div className="font-medium text-gray-900 mb-2">{sport}</div>
-                            <div className="text-sm text-gray-600 mb-2">{sportCourts.length} court(s)</div>
-                            <div className="space-y-3">
-                              {sportCourts.map((court) => (
-                                <div key={court.id} className="border-l-2 border-blue-200 pl-3">
-                                  <div className="font-medium text-gray-800 mb-2">{court.name}</div>
-                                  <div className="text-xs text-gray-600 space-y-1">
-                                    {Object.entries(court.pricing).map(([dayKey, slots]) => (
-                                      <div key={dayKey} className="flex items-center gap-2">
-                                        <span className="w-16 font-medium">
-                                          {dayKey === 'sun' ? 'Sun' : dayKey === 'mon' ? 'Mon' : dayKey === 'tue' ? 'Tue' : dayKey === 'wed' ? 'Wed' : dayKey === 'thu' ? 'Thu' : dayKey === 'fri' ? 'Fri' : 'Sat'}:
-                                        </span>
-                                        <span className="text-gray-500">
-                                          {slots.map((slot, index) => (
-                                            <span key={index}>
-                                              {slot.startTime}-{slot.endTime} (₹{slot.price}/hr)
-                                              {index < slots.length - 1 ? ', ' : ''}
-                                            </span>
-                                          ))}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-gray-50 rounded-xl">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Amenities
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {values.amenities.length > 0 ? (
-                        values.amenities.map((amenity) => (
-                          <span key={amenity} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-                            {amenity}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-gray-500 text-sm">No amenities selected</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
-                    <h3 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Important Information
-                    </h3>
-                    <div className="text-sm text-yellow-700 space-y-2">
-                      <p>• Your facility will be reviewed by our team within 2-3 business days</p>
-                      <p>• You'll receive an email notification once the review is complete</p>
-                      <p>• Ensure all uploaded documents are clear and valid</p>
-                      <p>• Our team may contact you for additional information if needed</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    className="px-6 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    {isSubmitting ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Save Changes" : "Submit for Approval")}
-                  </button>
-                </div>
               </div>
             )}
           </Form>
