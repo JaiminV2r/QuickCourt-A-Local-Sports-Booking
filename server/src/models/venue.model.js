@@ -1,6 +1,6 @@
 // backend/src/models/venue.model.js
 const mongoose = require('mongoose');
-const { VENUE_STATUS } = require('../helper/constant.helper');
+const { VENUE_STATUS, SPORT_TYPE, AMENITIES } = require('../helper/constant.helper');
 const { urlFromName } = require('../utils/cloudnairy.utils');
 
 const { toJSON,paginate } = require('./plugins')
@@ -19,8 +19,12 @@ location: {
       coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
     },
 
-    sports: [{ type: String , default : null}], // slugs
-    amenities: [String],
+    sports: [{ type: String , enum: Object.values(SPORT_TYPE), default : null}], // slugs
+    amenities: [{
+      type: String,
+      enum: Object.values(AMENITIES),
+      default: null
+    }],
 
     // store ONLY image names; URLs are computed at response time
     photos: [String],

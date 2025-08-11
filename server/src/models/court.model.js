@@ -10,7 +10,6 @@ const CourtSchema = new Schema({
   },
   court_name: { type: String, required: true },
   sport_type: { type: String, required: true },
-  pricing_per_hour: { type: Number, required: true },
   operating_hours: { type: String, required: true },  // Example: "9 AM to 5 PM"
   availability: [
     {
