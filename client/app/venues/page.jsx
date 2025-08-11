@@ -291,9 +291,12 @@ export default function VenuesPage() {
                             <span className="text-2xl font-bold text-green-600">₹{venue.price}</span>
                             <span className="text-sm text-gray-500">/hr starting from</span>
                           </div>
-                          <div className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors">
-                            Book Now
-                          </div>
+                          <Link
+                            href={`/venues/${venue.id}`}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                          >
+                            View Details
+                          </Link>
                         </div>
                       </div>
                     </div>

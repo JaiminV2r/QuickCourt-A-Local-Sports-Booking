@@ -30,6 +30,10 @@ export const otpSchema = Yup.object({
     .required('OTP is required'),
 })
 
+export const forgotPasswordSchema = Yup.object({
+  email: Yup.string().email('Invalid email').required('Email is required'),
+})
+
 export const facilitySchema = Yup.object({
   name: Yup.string().required('Facility name is required'),
   location: Yup.string().required('Location is required'),

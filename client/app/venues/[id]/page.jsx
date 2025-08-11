@@ -1,14 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MapPin, Star, ChevronLeft, ChevronRight, Phone, Mail, Share2, Heart } from "lucide-react"
+import { MapPin, Star, ChevronLeft, ChevronRight, Phone, Mail, Share2, Heart, LogIn } from "lucide-react"
 import Link from "next/link"
 import { useFacilityQuery } from "../../../actions/facilities"
+import { useAuth } from "../../../contexts/auth-context"
 
 export default function SingleVenuePage({ params }) {
   const [activeTab, setActiveTab] = useState("overview")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
+  const { user } = useAuth()
   const id = Number(params?.id)
   const { data: venue, isLoading } = useFacilityQuery(id)
 
@@ -45,6 +47,39 @@ export default function SingleVenuePage({ params }) {
     } else {
       navigator.clipboard.writeText(window.location.href)
       alert("Link copied to clipboard!")
+    }
+  }
+
+  const handleBookNow = () => {
+    if (user) {
+      // User is logged in, redirect to booking page
+      window.location.href = `/venues/${venue.id}/book`
+    } else {
+      // User is not logged in, redirect to login with redirect back to this page
+      window.location.href = "/auth/login?redirect=" + encodeURIComponent(window.location.pathname)
+    }
+  }
+
+  const handleWriteReview = () => {
+    if (user) {
+      // User is logged in, redirect to review page or show review form
+      alert("Review functionality coming soon!")
+    } else {
+      // User is not logged in, redirect to login with redirect back to this page
+      window.location.href = "/auth/login?redirect=" + encodeURIComponent(window.location.pathname)
+    }
+  }
+
+  const handleFavorite = () => {
+    if (user) {
+      // User is logged in, toggle favorite
+      setIsFavorite(!isFavorite)
+    } else {
+      // User is not logged in, show login prompt
+      const shouldLogin = confirm("Please login to add this venue to your favorites. Would you like to login now?")
+      if (shouldLogin) {
+        window.location.href = "/auth/login?redirect=" + encodeURIComponent(window.location.pathname)
+      }
     }
   }
 
@@ -103,27 +138,37 @@ export default function SingleVenuePage({ params }) {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setIsFavorite(!isFavorite)}
+                  onClick={handleFavorite}
                   className={`p-3 rounded-xl border transition-colors ${
                     isFavorite
                       ? "bg-red-50 border-red-200 text-red-600"
                       : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
+                  title={isFavorite ? "Remove from favorites" : user ? "Add to favorites" : "Add to favorites (requires login)"}
                 >
                   <Heart className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`} />
                 </button>
                 <button
                   onClick={handleShare}
                   className="p-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  title="Share this venue"
                 >
                   <Share2 className="w-5 h-5" />
                 </button>
-                <Link
-                  href={`/venues/${venue.id}/book`}
-                  className="bg-blue-600 text-white px-6 md:px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                <button
+                  onClick={handleBookNow}
+                  className="bg-blue-600 text-white px-6 md:px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  title={user ? "Book this venue" : "Book this venue (requires login)"}
                 >
-                  Book Now
-                </Link>
+                  {user ? (
+                    "Book Now"
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Book Now
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -221,14 +266,17 @@ export default function SingleVenuePage({ params }) {
                       <div className="bg-green-50 p-4 md:p-6 rounded-2xl text-center">
                         <div className="text-2xl md:text-3xl font-bold text-green-600 mb-1">
                           ₹{
-                            Math.min(
-                              ...venue.sports.flatMap((s) => (s.courts || []).map((c) => c.price))
-                            )
+                            (() => {
+                              const prices = venue.sports.flatMap((s) =>
+                                Array.isArray(s.courts) ? s.courts.map((c) => c.price) : []
+                              )
+                              return prices.length ? Math.min(...prices) : 0
+                            })()
                           }+
                         </div>
                         <div className="text-sm text-gray-600">Starting Price/hr</div>
                       </div>
-                      <div className="bg-yellow-50 p-4 md:p-6 rounded-2xl text-center col-span-2 md:col-span-1">
+                      <div className="bg-yellow-50 p-4 md:p-6 rounded-2xl col-span-2 md:col-span-1">
                         <div className="text-2xl md:text-3xl font-bold text-yellow-600 mb-1">{venue.rating}</div>
                         <div className="text-sm text-gray-600">Rating</div>
                       </div>
@@ -265,16 +313,27 @@ export default function SingleVenuePage({ params }) {
                           <div className="text-right">
                             <div className="text-sm text-gray-500">Starting from</div>
                             <div className="text-xl md:text-2xl font-bold text-green-600">
-                              ₹{Math.min(...(sport.courts || []).map((c) => c.price))}
+                              ₹{
+                                Array.isArray(sport.courts) && sport.courts.length
+                                  ? Math.min(...sport.courts.map((c) => c.price))
+                                  : (typeof sport.price === 'number' ? sport.price : 0)
+                              }
                             </div>
                           </div>
                         </div>
-                        <Link
-                          href={`/venues/${venue.id}/book?sport=${sport.name.toLowerCase()}`}
-                          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                        <button
+                          onClick={handleBookNow}
+                          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
                         >
-                          Book {sport.name} Court
-                        </Link>
+                          {user ? (
+                            `Book ${sport.name} Court`
+                          ) : (
+                            <>
+                              <LogIn className="w-4 h-4" />
+                              Book {sport.name} Court
+                            </>
+                          )}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -298,8 +357,18 @@ export default function SingleVenuePage({ params }) {
                 <div>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                     <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-0">Reviews & Ratings</h2>
-                    <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">
-                      Write Review
+                    <button 
+                      onClick={handleWriteReview}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      {user ? (
+                        "Write Review"
+                      ) : (
+                        <>
+                          <LogIn className="w-4 h-4" />
+                          Write Review
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -434,7 +503,7 @@ export default function SingleVenuePage({ params }) {
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                       <div>
                         <span className="font-medium">{sport.name}</span>
-                        <div className="text-sm text-gray-500">{sport.courts} courts</div>
+                        <div className="text-sm text-gray-500">{Array.isArray(sport.courts) ? sport.courts.length : (Number(sport.courts) || 0)} courts</div>
                       </div>
                       <div className="text-right">
                         <span className="text-green-600 font-semibold">₹{sport.price}</span>
@@ -443,12 +512,19 @@ export default function SingleVenuePage({ params }) {
                     </div>
                   ))}
                 </div>
-                <Link
-                  href={`/venues/${venue.id}/book`}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors text-center block"
+                <button
+                  onClick={handleBookNow}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors text-center block flex items-center justify-center gap-2"
                 >
-                  Book Now
-                </Link>
+                  {user ? (
+                    "Book Now"
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Book Now
+                    </>
+                  )}
+                </button>
 
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h4 className="font-semibold mb-3">Contact Information</h4>

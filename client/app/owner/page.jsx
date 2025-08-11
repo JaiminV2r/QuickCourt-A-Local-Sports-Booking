@@ -1,10 +1,50 @@
 "use client"
 
 import { useState } from "react"
-import { Building, Calendar, DollarSign, TrendingUp, Clock, CheckCircle, Plus, BarChart3 } from "lucide-react"
+import { Building, Calendar, DollarSign, TrendingUp, Clock, CheckCircle, Plus, BarChart3, UserCircle2 } from "lucide-react"
 import Link from "next/link"
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, AreaChart, Area, Legend } from "recharts"
 
 export default function OwnerDashboard() {
+  // Simulated datasets for charts
+  const bookingsTrendData = [
+    { label: "Mon", bookings: 32 },
+    { label: "Tue", bookings: 45 },
+    { label: "Wed", bookings: 38 },
+    { label: "Thu", bookings: 52 },
+    { label: "Fri", bookings: 70 },
+    { label: "Sat", bookings: 88 },
+    { label: "Sun", bookings: 60 },
+  ]
+
+  const earningsSummaryData = [
+    { label: "Week 1", earnings: 24500 },
+    { label: "Week 2", earnings: 31800 },
+    { label: "Week 3", earnings: 28750 },
+    { label: "Week 4", earnings: 35420 },
+  ]
+
+  const peakHoursData = [
+    { hour: "6AM", value: 12 },
+    { hour: "8AM", value: 18 },
+    { hour: "10AM", value: 9 },
+    { hour: "12PM", value: 7 },
+    { hour: "2PM", value: 15 },
+    { hour: "4PM", value: 24 },
+    { hour: "6PM", value: 28 },
+    { hour: "8PM", value: 21 },
+  ]
+
+  // Simple booking calendar (next 7 days x selected time slots)
+  const days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    return {
+      key: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" }),
+    }
+  })
+  const calendarSlots = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]
   const stats = [
     {
       title: "Total Facilities",
@@ -214,6 +254,38 @@ export default function OwnerDashboard() {
                 </div>
               </div>
             </Link>
+
+            {/* Removed Manage Courts quick action; courts are managed inside facility add/edit */}
+
+            <Link
+              href="/owner/time-slots"
+              className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-6 rounded-2xl border border-yellow-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-yellow-500 p-3 rounded-2xl shadow-md">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-900">Time Slots</h3>
+                  <p className="text-yellow-700 text-sm">Set availability & blocks</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/owner/profile"
+              className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-2xl border border-slate-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-slate-500 p-3 rounded-2xl shadow-md">
+                  <UserCircle2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">Owner Profile</h3>
+                  <p className="text-slate-700 text-sm">View and update details</p>
+                </div>
+              </div>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -326,28 +398,82 @@ export default function OwnerDashboard() {
             </div>
           </div>
 
-          {/* Charts Section */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Booking Trends */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Trends</h2>
-              <div className="h-64 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <TrendingUp className="w-12 h-12 text-purple-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Chart would be integrated here</p>
-                </div>
+          {/* Booking Calendar + Charts Section */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Booking Calendar */}
+            <div className="bg-white rounded-2xl shadow-sm border p-6 lg:col-span-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Calendar</h2>
+              <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 mb-2">
+                <div className="col-span-1"></div>
+                {days.map((d) => (
+                  <div key={d.key} className="text-center font-medium">{d.label}</div>
+                ))}
+              </div>
+              <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                {calendarSlots.map((slot) => (
+                  <div key={slot} className="grid grid-cols-4 gap-2 items-center">
+                    <div className="text-xs text-gray-500 font-medium">{slot}</div>
+                    {days.map((d) => (
+                      <div key={d.key} className="h-8 rounded-md border border-gray-200 bg-gray-50 hover:bg-blue-50 cursor-pointer" />
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Revenue Analytics */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue by Facility</h2>
-              <div className="h-64 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Chart would be integrated here</p>
-                </div>
+            {/* Booking Trends (Line) */}
+            <div className="bg-white rounded-2xl shadow-sm border p-6 lg:col-span-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Daily Booking Trends</h2>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={bookingsTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="bookings" stroke="#4F46E5" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
+            </div>
+
+            {/* Earnings Summary (Bar) */}
+            <div className="bg-white rounded-2xl shadow-sm border p-6 lg:col-span-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Earnings Summary</h2>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={earningsSummaryData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="earnings" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Peak Booking Hours */}
+          <div className="mt-8 bg-white rounded-2xl shadow-sm border p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Peak Booking Hours</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={peakHoursData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPeak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="hour" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="value" stroke="#F59E0B" fillOpacity={1} fill="url(#colorPeak)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>

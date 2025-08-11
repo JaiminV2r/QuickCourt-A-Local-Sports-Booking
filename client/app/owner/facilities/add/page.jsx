@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Plus, X, MapPin, Clock, DollarSign, Users } from "lucide-react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Formik, Form, Field, ErrorMessage } from "formik"
 import * as Yup from "yup"
 import { facilityAddSchema } from "@/validation/schemas"
@@ -10,6 +11,9 @@ import { facilityAddSchema } from "@/validation/schemas"
 
 export default function AddFacilityPage() {
   const [step, setStep] = useState(1)
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("id")
+  const isEditMode = Boolean(editId)
   const router = useRouter()
 
   const initialValues = {
@@ -31,6 +35,76 @@ export default function AddFacilityPage() {
     images: [],
     documents: [],
   }
+
+  const [formInitialValues, setFormInitialValues] = useState(initialValues)
+
+  useEffect(() => {
+    if (!isEditMode) return
+    // Simulate fetching facility by id and mapping to form values
+    const mockFacility = (() => {
+      if (editId === "1") {
+        return {
+          name: "SportZone Arena",
+          address: "123 Sports Complex, Mumbai",
+          city: "Mumbai",
+          state: "Maharashtra",
+          pincode: "400001",
+          phone: "+91 9876543210",
+          email: "",
+          sports: ["Badminton", "Tennis"],
+          amenities: ["Parking", "AC"],
+        }
+      }
+      if (editId === "2") {
+        return {
+          name: "Elite Sports Club",
+          address: "456 Elite Street, Delhi",
+          city: "Delhi",
+          state: "Delhi",
+          pincode: "110001",
+          phone: "+91 9876543210",
+          email: "",
+          sports: ["Football", "Cricket"],
+          amenities: ["Parking", "Floodlights"],
+        }
+      }
+      return {
+        name: "Champions Court",
+        address: "789 Victory Lane, Bangalore",
+        city: "Bangalore",
+        state: "Karnataka",
+        pincode: "560001",
+        phone: "+91 9876543210",
+        email: "",
+        sports: ["Badminton", "Table Tennis"],
+        amenities: ["WiFi", "Water"],
+      }
+    })()
+
+    const makeEmptyPricing = () => ({
+      sun: [{ startTime: "", endTime: "", price: "" }],
+      mon: [{ startTime: "", endTime: "", price: "" }],
+      tue: [{ startTime: "", endTime: "", price: "" }],
+      wed: [{ startTime: "", endTime: "", price: "" }],
+      thu: [{ startTime: "", endTime: "", price: "" }],
+      fri: [{ startTime: "", endTime: "", price: "" }],
+      sat: [{ startTime: "", endTime: "", price: "" }],
+    })
+
+    const courtsFromSports = mockFacility.sports.map((sport, idx) => ({
+      id: Date.now() + idx,
+      sport,
+      name: `${sport} Court 1`,
+      pricing: makeEmptyPricing(),
+    }))
+
+    setFormInitialValues((prev) => ({
+      ...prev,
+      ...initialValues,
+      ...mockFacility,
+      courts: courtsFromSports,
+    }))
+  }, [isEditMode, editId])
 
   const sportsOptions = [
     "Badminton",
@@ -74,18 +148,6 @@ export default function AddFacilityPage() {
     setFieldValue('amenities', newAmenities)
   }
 
-  const addCourt = (sport, setFieldValue, values) => {
-    const courtNumber = values.courts.filter((c) => c.sport === sport).length + 1
-    const newCourt = {
-      id: Date.now(),
-      sport,
-      name: `${sport} Court ${courtNumber}`,
-      price: 500,
-      peakPrice: 600,
-    }
-    setFieldValue('courts', [...values.courts, newCourt])
-  }
-
   const removeCourt = (courtId, setFieldValue, values) => {
     const newCourts = values.courts.filter((c) => c.id !== courtId)
     setFieldValue('courts', newCourts)
@@ -102,8 +164,12 @@ export default function AddFacilityPage() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      alert("Facility submitted for approval! You'll receive an email confirmation shortly.")
-      router.push("/owner/facilities")
+      if (isEditMode) {
+        alert("Facility updated successfully.")
+      } else {
+        alert("Facility submitted for approval! You'll receive an email confirmation shortly.")
+      }
+      window.location.href = "/owner/facilities"
     } catch (error) {
       setStatus({ error: "Failed to submit facility. Please try again." })
     } finally {
@@ -145,7 +211,7 @@ export default function AddFacilityPage() {
           ))}
         </div>
         <div className="flex justify-center mt-4">
-          <div className="flex space-x-16 text-sm">
+          <div className="flex justify-center gap-12 text-sm">
             <span className={step >= 1 ? "text-blue-600 font-medium" : "text-gray-500"}>Basic Info</span>
             <span className={step >= 2 ? "text-blue-600 font-medium" : "text-gray-500"}>Sports & Courts</span>
             <span className={step >= 3 ? "text-blue-600 font-medium" : "text-gray-500"}>Amenities</span>
@@ -155,7 +221,8 @@ export default function AddFacilityPage() {
       </div>
 
       <Formik
-        initialValues={initialValues}
+        initialValues={formInitialValues}
+        enableReinitialize
         validationSchema={facilityAddSchema}
         onSubmit={handleSubmit}
         validateOnChange={true}
@@ -282,45 +349,11 @@ export default function AddFacilityPage() {
                       type="email"
                       name="email"
                       className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.email && toWuched.email ? 'border-red-500' : 'border-gray-300'
+                        errors.email && touched.email ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="facility@example.com"
                     />
                     <ErrorMessage name="email" component="div" className="text-red-500 text-sm mt-1" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Weekday Hours</label>
-                    <div className="flex gap-2">
-                      <Field
-                        type="time"
-                        name="operatingHours.weekdays.open"
-                        className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <span className="flex items-center text-gray-500">to</span>
-                      <Field
-                        type="time"
-                        name="operatingHours.weekdays.close"
-                        className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Weekend Hours</label>
-                    <div className="flex gap-2">
-                      <Field
-                        type="time"
-                        name="operatingHours.weekends.open"
-                        className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <span className="flex items-center text-gray-500">to</span>
-                      <Field
-                        type="time"
-                        name="operatingHours.weekends.close"
-                        className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -377,14 +410,50 @@ export default function AddFacilityPage() {
                       <div key={sport} className="mb-6 p-6 border border-gray-200 rounded-xl bg-gray-50">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-medium text-gray-900">{sport} Courts</h3>
-                          <button
-                            type="button"
-                            onClick={() => addCourt(sport, setFieldValue, values)}
-                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium bg-white px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add Court
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="text"
+                              placeholder="Type court name and press Enter"
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  const courtName = e.target.value.trim()
+                                  if (courtName) {
+                                    const newCourt = {
+                                      id: Date.now(),
+                                      sport,
+                                      name: courtName,
+                                      pricing: {
+                                        sun: [{ startTime: "", endTime: "", price: "" }],
+                                        mon: [{ startTime: "", endTime: "", price: "" }],
+                                        tue: [{ startTime: "", endTime: "", price: "" }],
+                                        wed: [{ startTime: "", endTime: "", price: "" }],
+                                        thu: [{ startTime: "", endTime: "", price: "" }],
+                                        fri: [{ startTime: "", endTime: "", price: "" }],
+                                        sat: [{ startTime: "", endTime: "", price: "" }],
+                                      }
+                                    }
+                                    setFieldValue('courts', [...values.courts, newCourt])
+                                    e.target.value = ''
+                                  }
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const input = document.querySelector(`input[placeholder="Type court name and press Enter"]`)
+                                if (input && input.value.trim()) {
+                                  input.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter' }))
+                                }
+                              }}
+                              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium bg-white px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Court
+                            </button>
+                          </div>
                         </div>
 
                         <div className="space-y-4">
@@ -392,54 +461,185 @@ export default function AddFacilityPage() {
                             .filter((c) => c.sport === sport)
                             .map((court) => (
                               <div key={court.id} className="bg-white p-4 rounded-xl border border-gray-200">
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Court Name</label>
-                                    <input
-                                      type="text"
-                                      value={court.name}
-                                      onChange={(e) => updateCourt(court.id, "name", e.target.value, setFieldValue, values)}
-                                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                      placeholder="Court name"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                      Regular Price (₹/hr)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      value={court.price}
-                                      onChange={(e) => updateCourt(court.id, "price", Number.parseInt(e.target.value), setFieldValue, values)}
-                                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                      placeholder="500"
-                                      min="0"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                      Peak Price (₹/hr)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      value={court.peakPrice}
-                                      onChange={(e) =>
-                                        updateCourt(court.id, "peakPrice", Number.parseInt(e.target.value), setFieldValue, values)
-                                      }
-                                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                      placeholder="600"
-                                      min="0"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end">
-                                    <button
-                                      type="button"
-                                      onClick={() => removeCourt(court.id, setFieldValue, values)}
-                                      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="font-medium text-gray-900">{court.name}</h4>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCourt(court.id, setFieldValue, values)}
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                {/* Pricing Table */}
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border-collapse text-sm">
+                                    <thead>
+                                      <tr className="border-b border-gray-200">
+                                        <th className="text-left p-2 font-medium text-gray-700">Days</th>
+                                        <th className="text-left p-2 font-medium text-gray-700">Start Time</th>
+                                        <th className="text-left p-2 font-medium text-gray-700">End Time</th>
+                                        <th className="text-left p-2 font-medium text-gray-700">Price (₹/hr)</th>
+                                        <th className="text-left p-2 font-medium text-gray-700">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[
+                                        { key: "sun", label: "Sunday" },
+                                        { key: "mon", label: "Monday" },
+                                        { key: "tue", label: "Tuesday" },
+                                        { key: "wed", label: "Wednesday" },
+                                        { key: "thu", label: "Thursday" },
+                                        { key: "fri", label: "Friday" },
+                                        { key: "sat", label: "Saturday" },
+                                      ].map((day) => (
+                                        court.pricing[day.key].map((slot, index) => (
+                                          <tr key={`${day.key}-${index}`} className="border-b border-gray-100">
+                                            <td className="p-2">
+                                              {index === 0 && <span className="font-medium text-gray-900">{day.label}</span>}
+                                            </td>
+                                            <td className="p-2">
+                                              <select
+                                                value={slot.startTime}
+                                                onChange={(e) => {
+                                                  const newCourts = values.courts.map((c) => {
+                                                    if (c.id === court.id) {
+                                                      const newPricing = [...c.pricing[day.key]]
+                                                      newPricing[index] = { ...newPricing[index], startTime: e.target.value }
+                                                      return {
+                                                        ...c,
+                                                        pricing: {
+                                                          ...c.pricing,
+                                                          [day.key]: newPricing
+                                                        }
+                                                      }
+                                                    }
+                                                    return c
+                                                  })
+                                                  setFieldValue('courts', newCourts)
+                                                }}
+                                                className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                              >
+                                                <option value="">Select time</option>
+                                                {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"].map(time => (
+                                                  <option key={time} value={time}>{time}</option>
+                                                ))}
+                                              </select>
+                                            </td>
+                                            <td className="p-2">
+                                              <select
+                                                value={slot.endTime}
+                                                onChange={(e) => {
+                                                  const newCourts = values.courts.map((c) => {
+                                                    if (c.id === court.id) {
+                                                      const newPricing = [...c.pricing[day.key]]
+                                                      newPricing[index] = { ...newPricing[index], endTime: e.target.value }
+                                                      return {
+                                                        ...c,
+                                                        pricing: {
+                                                          ...c.pricing,
+                                                          [day.key]: newPricing
+                                                        }
+                                                      }
+                                                    }
+                                                    return c
+                                                  })
+                                                  setFieldValue('courts', newCourts)
+                                                }}
+                                                className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                              >
+                                                <option value="">Select time</option>
+                                                {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"].map(time => (
+                                                  <option key={time} value={time}>{time}</option>
+                                                ))}
+                                              </select>
+                                            </td>
+                                            <td className="p-2">
+                                              <input
+                                                type="number"
+                                                value={slot.price}
+                                                onChange={(e) => {
+                                                  const newCourts = values.courts.map((c) => {
+                                                    if (c.id === court.id) {
+                                                      const newPricing = [...c.pricing[day.key]]
+                                                      newPricing[index] = { ...newPricing[index], price: parseInt(e.target.value) || 0 }
+                                                      return {
+                                                        ...c,
+                                                        pricing: {
+                                                          ...c.pricing,
+                                                          [day.key]: newPricing
+                                                        }
+                                                      }
+                                                    }
+                                                    return c
+                                                  })
+                                                  setFieldValue('courts', newCourts)
+                                                }}
+                                                className="w-16 p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                                min="0"
+                                                placeholder="₹/hr"
+                                              />
+                                            </td>
+                                            <td className="p-2">
+                                              <div className="flex gap-1">
+                                                {index === court.pricing[day.key].length - 1 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const newCourts = values.courts.map((c) => {
+                                                        if (c.id === court.id) {
+                                                          const newPricing = [...c.pricing[day.key], { startTime: "", endTime: "", price: "" }]
+                                                          return {
+                                                            ...c,
+                                                            pricing: {
+                                                              ...c.pricing,
+                                                              [day.key]: newPricing
+                                                            }
+                                                          }
+                                                        }
+                                                        return c
+                                                      })
+                                                      setFieldValue('courts', newCourts)
+                                                    }}
+                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
+                                                    title="Add time slot"
+                                                  >
+                                                    <Plus className="w-3 h-3" />
+                                                  </button>
+                                                )}
+                                                {court.pricing[day.key].length > 1 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const newCourts = values.courts.map((c) => {
+                                                        if (c.id === court.id) {
+                                                          const newPricing = c.pricing[day.key].filter((_, i) => i !== index)
+                                                          return {
+                                                            ...c,
+                                                            pricing: {
+                                                              ...c.pricing,
+                                                              [day.key]: newPricing
+                                                            }
+                                                          }
+                                                        }
+                                                        return c
+                                                      })
+                                                      setFieldValue('courts', newCourts)
+                                                    }}
+                                                    className="p-1 text-red-600 hover:bg-red-50 rounded text-xs"
+                                                    title="Remove time slot"
+                                                  >
+                                                    <X className="w-3 h-3" />
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        ))
+                                      ))}
+                                    </tbody>
+                                  </table>
                                 </div>
                               </div>
                             ))}
@@ -447,7 +647,7 @@ export default function AddFacilityPage() {
                           {values.courts.filter((c) => c.sport === sport).length === 0 && (
                             <div className="text-center py-8 text-gray-500">
                               <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                              <p>No courts added yet. Click "Add Court" to get started.</p>
+                              <p>No courts added yet. Type a court name above and press Enter to get started.</p>
                             </div>
                           )}
                         </div>
@@ -584,7 +784,7 @@ export default function AddFacilityPage() {
                     onClick={() => setStep(4)}
                     className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                   >
-                    Review & Submit
+                    {isEditMode ? "Review & Save" : "Review & Submit"}
                   </button>
                 </div>
               </div>
@@ -635,18 +835,6 @@ export default function AddFacilityPage() {
                         <span className="text-gray-600">Address:</span>
                         <div className="font-medium text-gray-900">{values.address}</div>
                       </div>
-                      <div>
-                        <span className="text-gray-600">Weekday Hours:</span>
-                        <div className="font-medium text-gray-900">
-                          {values.operatingHours.weekdays.open} - {values.operatingHours.weekdays.close}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Weekend Hours:</span>
-                        <div className="font-medium text-gray-900">
-                          {values.operatingHours.weekends.open} - {values.operatingHours.weekends.close}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -662,13 +850,27 @@ export default function AddFacilityPage() {
                           <div key={sport} className="bg-white p-4 rounded-lg border border-gray-200">
                             <div className="font-medium text-gray-900 mb-2">{sport}</div>
                             <div className="text-sm text-gray-600 mb-2">{sportCourts.length} court(s)</div>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {sportCourts.map((court) => (
-                                <div key={court.id} className="flex justify-between items-center text-sm">
-                                  <span>{court.name}</span>
-                                  <span className="text-green-600 font-medium">
-                                    ₹{court.price}/hr (Peak: ₹{court.peakPrice}/hr)
-                                  </span>
+                                <div key={court.id} className="border-l-2 border-blue-200 pl-3">
+                                  <div className="font-medium text-gray-800 mb-2">{court.name}</div>
+                                  <div className="text-xs text-gray-600 space-y-1">
+                                    {Object.entries(court.pricing).map(([dayKey, slots]) => (
+                                      <div key={dayKey} className="flex items-center gap-2">
+                                        <span className="w-16 font-medium">
+                                          {dayKey === 'sun' ? 'Sun' : dayKey === 'mon' ? 'Mon' : dayKey === 'tue' ? 'Tue' : dayKey === 'wed' ? 'Wed' : dayKey === 'thu' ? 'Thu' : dayKey === 'fri' ? 'Fri' : 'Sat'}:
+                                        </span>
+                                        <span className="text-gray-500">
+                                          {slots.map((slot, index) => (
+                                            <span key={index}>
+                                              {slot.startTime}-{slot.endTime} (₹{slot.price}/hr)
+                                              {index < slots.length - 1 ? ', ' : ''}
+                                            </span>
+                                          ))}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -724,7 +926,7 @@ export default function AddFacilityPage() {
                     className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
-                    {isSubmitting ? "Submitting..." : "Submit for Approval"}
+                    {isSubmitting ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Save Changes" : "Submit for Approval")}
                   </button>
                 </div>
               </div>
