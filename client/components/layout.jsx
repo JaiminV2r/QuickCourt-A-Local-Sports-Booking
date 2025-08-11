@@ -19,6 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog"
+import { toast } from "react-toastify"
+import { ROLES } from "@/lib/constant"
 
 export default function Layout({ children, allowedRoles }) {
   if (allowedRoles) {
@@ -41,13 +43,13 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
             <Link href="/" className="text-2xl font-bold text-blue-600">
               QuickCourt
             </Link>
-            {user?.role === "admin" && (
+            {user?.role === ROLES.admin && (
               <span className="ml-3 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
                 <Shield className="w-3 h-3 inline mr-1" />
                 Admin
               </span>
             )}
-            {user?.role === "owner" && (
+            {user?.role === ROLES.facility_owner && (
               <span className="ml-3 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
                 <Building className="w-3 h-3 inline mr-1" />
                 Owner
@@ -250,9 +252,9 @@ function LayoutInner({ children }) {
         { href: "/contact", label: "Contact", icon: Users },
       ]
     }
-
+    console.log('🔥🔥🔥🔥user.role🔥🔥🔥🔥🔥',user.role);
     switch (user.role) {
-      case "admin":
+      case ROLES.admin:
         return [
           { href: "/admin", label: "Dashboard", icon: BarChart3 },
           { href: "/admin/facilities", label: "Facilities", icon: Building },
@@ -260,7 +262,7 @@ function LayoutInner({ children }) {
           { href: "/admin/reports", label: "Reports", icon: FileText },
           { href: "/admin/settings", label: "Settings", icon: Settings },
         ]
-      case "owner":
+      case ROLES.facility_owner:
         return [
           { href: "/owner", label: "Dashboard", icon: BarChart3 },
           { href: "/owner/facilities", label: "My Facilities", icon: Building },
@@ -285,6 +287,7 @@ function LayoutInner({ children }) {
   const confirmLogout = async () => {
     try {
       await logout()
+      toast.success("Logged out successfully")
     } finally {
       setIsLogoutDialogOpen(false)
       router.replace("/auth/login")

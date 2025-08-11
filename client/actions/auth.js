@@ -6,11 +6,7 @@ import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
 function computeRoleKey(apiRole) {
-  const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
-  const s = base.toString().toLowerCase()
-  if (s.includes('admin')) return 'admin'
-  if (s.includes('owner') || s.includes('facility')) return 'owner'
-  return 'player'
+  return apiRole?.role
 }
 
 function setUserCookie(user) {

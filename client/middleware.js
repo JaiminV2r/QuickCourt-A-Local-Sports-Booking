@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { ROLES } from './lib/constant'
 
 function parseUserCookie(cookieValue) {
   try {
@@ -9,10 +10,10 @@ function parseUserCookie(cookieValue) {
 }
 
 const PROTECTED_ROUTES = {
-  '/admin': ['admin'],
-  '/owner': ['owner'],
-  '/my-bookings': ['player', 'owner', 'admin'],
-  '/profile': ['player', 'owner', 'admin'],
+  '/admin': ROLES.admin,
+  '/owner': ROLES.facility_owner,
+  '/my-bookings': [ROLES.player, ROLES.facility_owner, ROLES.admin],
+  '/profile': [ROLES.player, ROLES.facility_owner, ROLES.admin],
 }
 
 function getAllowedRoles(pathname) {
@@ -25,7 +26,7 @@ function getAllowedRoles(pathname) {
 }
 
 function getRedirectForRole(role) {
-  const roleToPath = { admin: '/admin', owner: '/owner' }
+  const roleToPath = { [ROLES.admin]: '/admin', [ROLES.facility_owner]: '/owner' }
   return roleToPath[role] || '/'
 }
 

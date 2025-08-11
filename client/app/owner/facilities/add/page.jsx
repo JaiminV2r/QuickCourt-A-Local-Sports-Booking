@@ -1,7 +1,4 @@
 "use client"
-
-import Layout from "../../../../components/layout"
-import ProtectedRoute from "../../../../components/protected-route"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Plus, X, MapPin, Clock, DollarSign, Users } from "lucide-react"
