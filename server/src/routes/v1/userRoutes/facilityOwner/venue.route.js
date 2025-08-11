@@ -33,11 +33,16 @@
     validate(venueValidation.getAllVenues),
     venueControllers.getAllVenues
   );
-
+  router.get(
+    '/approved/list',
+    // auth(ROLES.facility_owner),
+    validate(venueValidation.getAllApprovedVenues),
+    venueControllers.getAllApprovedVenues
+  );
 
   router.get(
     '/:id',
-    auth(ROLES.owner),
+    auth(ROLES.facility_owner),
     validate(venueValidation.getVenue),
     venueControllers.getVenue
   )
@@ -64,7 +69,7 @@
  * This endpoint allows editing of venue details (including media updates).
  */
 router.put(
-  '/:id',
+  '/update/:id',
   auth(ROLES.facility_owner),
   upload.fileUpload.fields([
     { name: 'images', maxCount: 8 },

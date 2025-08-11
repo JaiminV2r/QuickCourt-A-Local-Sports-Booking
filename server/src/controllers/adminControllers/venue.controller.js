@@ -4,6 +4,7 @@ const ApiError = require('../../utils/apiError');
 const catchAsync = require('../../utils/catchAsync');
 const { str2regex } = require('../../helper/function.helper');
 const { VENUE_STATUS } = require('../../helper/constant.helper');
+const { paginationQuery } = require('../../helper/mongoose.helper');
 
 /**
  * All venue admin controllers are exported from here 👇
@@ -17,21 +18,65 @@ module.exports = {
 
         const filter = {
             deleted_at: null,
+            $or: [],
         };
 
         // Search by venue name
         if (search) {
             search = str2regex(search);
-            filter.$or = [
+            filter.$or.push(
                 { venue_name: { $regex: search, $options: 'i' } },
-                { city: { $regex: search, $options: 'i' } },
-            ];
+                { city: { $regex: search, $options: 'i' } }
+            );
         }
 
         // Filter by venue status
-        if (venue_status && Object.values(VENUE_STATUS).includes(venue_status)) {
+        if (venue_status) {
             filter.venue_status = venue_status;
         }
+
+        if (!filter.$or.length) delete filter.$or;
+
+        const pagination = paginationQuery(options, [
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'owner_id',
+                    foreignField: '_id',
+                    pipeline: [
+                        {
+                            $project: {
+                                full_name: 1,
+                                email: 1,
+                                avatar: 1,
+                            },
+                        },
+                    ],
+                    as: 'owner',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$owner',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+        ]);
+
+        const [venuesData] = await venueService.aggregate([
+            {
+                $match: filter,
+            },
+            {
+                $lookup: {
+                    from: 'courts',
+                    localField: '_id',
+                    foreignField: 'venue_id',
+                    as: 'courts',
+                },
+            },
+            ...pagination,
+        ]);
 
         // Populate owner details
         options.populate = [{ path: 'owner_id', select: 'full_name email' }];
@@ -39,7 +84,7 @@ module.exports = {
         res.status(httpStatus.OK).json({
             success: true,
             message: 'Get all venues successfully',
-            data: await venueService.getAll(filter, options),
+            data: venuesData,
         });
     }),
 

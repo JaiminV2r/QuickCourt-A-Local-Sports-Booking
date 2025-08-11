@@ -50,8 +50,16 @@ module.exports = {
             search: Joi.string().trim().allow(''),
             venue_status: Joi.string()
                 .valid(...Object.values(VENUE_STATUS))
-                .optional(),
+                .optional()
+                .allow(''),
             sort_by: Joi.string().trim().allow(''),
+        }),
+    },
+    getAllApprovedVenues: {
+        query: Joi.object().keys({
+            page: Joi.number().default(1).allow(''),
+            limit: Joi.number().default(10).allow(''),
+            search: Joi.string().trim().allow(''),
         }),
     },
     getVenue: {
@@ -65,7 +73,7 @@ module.exports = {
                 .items(
                     Joi.object().keys({
                         venue_id: Joi.string().custom(objectId).required(),
-                        court_name: Joi.string().min(2).max(120).required(),
+                        court_name: Joi.array().items(Joi.string().min(2).max(120)).required(),
                         sport_type: Joi.string()
                             .valid(...SPORT_TYPE)
                             .required(),
@@ -86,12 +94,8 @@ module.exports = {
                                     time_slots: Joi.array()
                                         .items(
                                             Joi.object().keys({
-                                                start_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
-                                                end_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
+                                                start_time: Joi.date().required(),
+                                                end_time: Joi.date().required(),
                                                 price: Joi.number().min(0).required(),
                                             })
                                         )
@@ -111,7 +115,7 @@ module.exports = {
             court_id: Joi.string().custom(objectId).required(),
         }),
         body: Joi.object().keys({
-            court_name: Joi.string().min(2).max(120).optional(),
+            court_name: Joi.array().items(Joi.string().min(2).max(120)).optional(),
             sport_type: Joi.string()
                 .valid(...SPORT_TYPE)
                 .optional(),
@@ -132,12 +136,8 @@ module.exports = {
                         time_slots: Joi.array()
                             .items(
                                 Joi.object().keys({
-                                    start_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
-                                    end_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
+                                    start_time: Joi.date().required(),
+                                    end_time: Joi.date().required(),
                                     price: Joi.number().min(0).required(),
                                 })
                             )

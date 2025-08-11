@@ -66,6 +66,10 @@ export const endpoints = {
     search: '/api/facilities/search',
     filter: '/api/facilities/filter',
   },
+  venues: {
+    list: '/user/facility-owners/venues/list',
+    byId: (id) => `/user/facility-owners/venues/${id}`,
+  },
   bookings: {
     list: '/api/bookings',
     create: '/api/bookings',

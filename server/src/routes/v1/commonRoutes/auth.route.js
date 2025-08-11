@@ -56,10 +56,17 @@ router.put('/reset-password', validate(authValidation.resetPassword), authContro
  */
 router.put(
     '/change-password',
-    auth(ROLES.player, ROLES.admin),
+    auth(ROLES.player, ROLES.admin , ROLES.facility_owner),
     validate(authValidation.changePassword),
     authController.changePassword
 );
+
+router.put(
+    '/update',
+    auth(ROLES.player,ROLES.admin , ROLES.facility_owner),
+    validate(authValidation.updateUser),
+    authController.update
+)
 
 /**
  * Get roles list (excluding Admin).

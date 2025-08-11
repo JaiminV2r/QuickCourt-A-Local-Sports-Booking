@@ -369,4 +369,17 @@ module.exports = {
             data: roles,
         });
     }),
+
+    update: catchAsync(async (req, res) => {
+        const { user, body } = req;
+
+        // Update user information
+        await userService.update({ _id: user._id }, { $set: body });
+
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: 'User information updated successfully',
+        });
+    }),
+
 };
