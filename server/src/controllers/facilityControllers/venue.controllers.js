@@ -6,6 +6,7 @@ const { default: mongoose } = require('mongoose');
 const { venueService } = require('../../services');
 const { Court } = require('../../models');
 const { paginationQuery } = require('../../helper/mongoose.helper');
+const { VENUE_STATUS } = require('../../helper/constant.helper');
 
 module.exports = {
     createVenue: catchAsync(async (req, res) => {
@@ -137,11 +138,54 @@ module.exports = {
     }),
 
     getAllVenues: catchAsync(async (req, res) => {
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 10, search = '', venue_status } = req.query;
 
         let filter = {
             owner_id: new mongoose.Types.ObjectId(req.user._id),
             deleted_at: null,
+            venue_status
+        };
+        if (search) {
+            filter.venue_name = { $regex: search, $options: 'i' }; // case-insensitive search
+        }
+
+        // Pagination
+        const options = {
+            page: parseInt(page, 10),
+            limit: parseInt(limit, 10),
+            sort: { createdAt: -1 }, // newest first
+        };
+
+        // Fetch venues with pagination
+
+        const pagination = paginationQuery(options);
+        const venuesData = await venueService.aggregate([
+            {
+                $match: filter,
+            },
+            {
+                $lookup: {
+                    from: 'courts',
+                    localField: '_id',
+                    foreignField: 'venue_id',
+                    as: 'courts',
+                },
+            },
+            ...pagination,
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Venues fetched successfully',
+            data: venuesData,
+        });
+    }),
+    getAllApprovedVenues: catchAsync(async (req, res) => {
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        let filter = {
+            deleted_at: null,
+            venue_status : VENUE_STATUS.APPROVED, // Only fetch approved venues     
         };
         if (search) {
             filter.venue_name = { $regex: search, $options: 'i' }; // case-insensitive search

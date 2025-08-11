@@ -55,6 +55,13 @@ module.exports = {
                 .optional(),
         }),
     },
+    getAllApprovedVenues: {
+        query: Joi.object().keys({
+            page: Joi.number().default(1).allow(''),
+            limit: Joi.number().default(10).allow(''),
+            search: Joi.string().trim().allow(''),
+        }),
+    },
     getVenue: {
         params: Joi.object().keys({
             id: Joi.string().custom(objectId).required(),

@@ -22,7 +22,6 @@ location: {
     sports: [{ type: String , enum: Object.values(SPORT_TYPE), default : null}], // slugs
     amenities: [{
       type: String,
-      enum: Object.values(AMENITIES),
       default: null
     }],
 
