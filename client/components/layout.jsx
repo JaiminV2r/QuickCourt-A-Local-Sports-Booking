@@ -4,19 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "../contexts/auth-context"
 import {
-  Menu,
-  X,
-  User,
-  Calendar,
-  MapPin,
-  LogOut,
-  Home,
-  BarChart3,
-  Users,
-  Building,
-  FileText,
-  Shield,
-  Settings,
+  Menu, X, User, Calendar, MapPin, LogOut, LogIn, Home, BarChart3,
+  Users, Building, FileText, Shield, Settings,
 } from "lucide-react"
 import ProtectedRoute from "./protected-route"
 
@@ -36,17 +25,18 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
+          {/* Brand + role badge */}
           <div className="flex items-center">
             <Link href="/" className="text-2xl font-bold text-blue-600">
               QuickCourt
             </Link>
-            {user.role === "admin" && (
+            {user?.role === "admin" && (
               <span className="ml-3 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
                 <Shield className="w-3 h-3 inline mr-1" />
                 Admin
               </span>
             )}
-            {user.role === "owner" && (
+            {user?.role === "owner" && (
               <span className="ml-3 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
                 <Building className="w-3 h-3 inline mr-1" />
                 Owner
@@ -68,32 +58,54 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
             ))}
           </nav>
 
+          {/* Right: auth controls (desktop) */}
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="text-sm">
+                    <div className="font-medium text-gray-900">{user.name}</div>
+                    <div className="text-gray-500 capitalize">{user.role}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="text-gray-600 hover:text-blue-600 p-2 rounded-md transition-colors"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/auth/login"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-md hover:bg-blue-50 transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="text-gray-600 hover:text-blue-600"
+              aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
-          {/* User menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-600" />
-              </div>
-              <div className="text-sm">
-                <div className="font-medium text-gray-900">{user.name}</div>
-                <div className="text-gray-500 capitalize">{user.role}</div>
-              </div>
-            </div>
-            <button
-              onClick={onLogout}
-              className="text-gray-600 hover:text-blue-600 p-2 rounded-md transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -114,23 +126,45 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                 {item.label}
               </Link>
             ))}
+
             <div className="border-t pt-3 mt-3">
-              <div className="flex items-center px-3 py-2">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                  <User className="w-4 h-4 text-blue-600" />
+              {user ? (
+                <>
+                  <div className="flex items-center px-3 py-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <User className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="text-sm">
+                      <div className="font-medium text-gray-900">{user.name}</div>
+                      <div className="text-gray-500 capitalize">{user.role}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 w-full text-left"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2 px-3 py-2">
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex-1 text-center px-3 py-2 rounded-md border border-blue-200 text-blue-600 font-medium hover:bg-blue-50"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex-1 text-center px-3 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  >
+                    Sign Up
+                  </Link>
                 </div>
-                <div className="text-sm">
-                  <div className="font-medium text-gray-900">{user.name}</div>
-                  <div className="text-gray-500 capitalize">{user.role}</div>
-                </div>
-              </div>
-              <button
-                onClick={onLogout}
-                className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 w-full text-left"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
+              )}
             </div>
           </div>
         </div>
@@ -140,7 +174,7 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
 }
 
 function Main({ children }) {
-  return <main className="flex-1">{children}</main>;
+  return <main className="flex-1">{children}</main>
 }
 
 function Footer() {
@@ -148,72 +182,44 @@ function Footer() {
     <footer className="bg-gray-800 text-white mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">QuickCourt</h3>
-              <p className="text-gray-300 mb-4">Your local sports booking platform</p>
-              <div className="flex space-x-4">
-                <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-                <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-                <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>
-                  <Link href="/venues" className="hover:text-white transition-colors">
-                    Find Venues
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="hover:text-white transition-colors">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-white transition-colors">
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Sports</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>Badminton</li>
-                <li>Tennis</li>
-                <li>Football</li>
-                <li>Basketball</li>
-                <li>Cricket</li>
-                <li>Table Tennis</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>
-                  <Link href="/help" className="hover:text-white transition-colors">
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="hover:text-white transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="hover:text-white transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-              </ul>
+          <div>
+            <h3 className="text-lg font-semibold mb-4">QuickCourt</h3>
+            <p className="text-gray-300 mb-4">Your local sports booking platform</p>
+            <div className="flex space-x-4">
+              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
+              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
+              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
-            <p>&copy; 2024 QuickCourt. All rights reserved.</p>
+          <div>
+            <h4 className="font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li><Link href="/venues" className="hover:text-white">Find Venues</Link></li>
+              <li><Link href="/about" className="hover:text-white">About Us</Link></li>
+              <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Sports</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li>Badminton</li><li>Tennis</li><li>Football</li>
+              <li>Basketball</li><li>Cricket</li><li>Table Tennis</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Support</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li><Link href="/help" className="hover:text-white">Help Center</Link></li>
+              <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+            </ul>
           </div>
         </div>
-      </footer>
+        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+          <p>&copy; {new Date().getFullYear()} QuickCourt. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
   )
 }
 
@@ -222,7 +228,15 @@ function LayoutInner({ children }) {
   const { user, logout } = useAuth()
 
   const getNavItems = () => {
-    if (!user) return []
+    if (!user) {
+      // Public nav for guests
+      return [
+        { href: "/", label: "Home", icon: Home },
+        { href: "/venues", label: "Venues", icon: MapPin },
+        { href: "/about", label: "About", icon: FileText },
+        { href: "/contact", label: "Contact", icon: Users },
+      ]
+    }
 
     switch (user.role) {
       case "admin":
@@ -256,13 +270,16 @@ function LayoutInner({ children }) {
     window.location.href = "/auth/login"
   }
 
-  if (!user) {
-    return <div className="min-h-screen bg-gray-50">{children}</div>
-  }
-
+  // Always render header/footer — regardless of auth
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} getNavItems={getNavItems} />
+      <Header
+        user={user}
+        onLogout={handleLogout}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        getNavItems={getNavItems}
+      />
       <Main>{children}</Main>
       <Footer />
     </div>
