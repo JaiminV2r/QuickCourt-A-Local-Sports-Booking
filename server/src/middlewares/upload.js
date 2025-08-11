@@ -1,7 +1,6 @@
 const multer = require('multer');
 const ApiError = require('../utils/apiError');
 const httpStatus = require('http-status');
-const { FILE_EXTENSION } = require('../helper/constant.helper');
 
 /**
  * File upload middleware.

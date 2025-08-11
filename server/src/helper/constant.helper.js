@@ -32,4 +32,25 @@ module.exports = {
         large: { type: 'large', size: [888, 595] },
         small: { type: 'small', size: [84, 48] },
     },
+      BOOKING: {
+        STATUS : {
+            PENDING: 'pending',
+            CONFIRMED: 'confirmed',
+            CANCELLED: 'cancelled',
+        }
+    },
+
+    FILE_FOLDERS:{
+        USER: 'user',
+        AVATAR: 'avatar',
+        VENUE: 'venue',
+        SPORT: 'sport',
+    },
+
+    VENUE_STATUS: {
+        PENDING: 'pending',
+        APPROVED: 'approved',
+        REJECTED: 'rejected',
+    },
+
 };
