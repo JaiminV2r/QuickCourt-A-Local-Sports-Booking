@@ -94,12 +94,8 @@ module.exports = {
                                     time_slots: Joi.array()
                                         .items(
                                             Joi.object().keys({
-                                                start_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
-                                                end_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
+                                                start_time: Joi.date().required(),
+                                                end_time: Joi.date().required(),
                                                 price: Joi.number().min(0).required(),
                                             })
                                         )
@@ -140,12 +136,8 @@ module.exports = {
                         time_slots: Joi.array()
                             .items(
                                 Joi.object().keys({
-                                    start_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
-                                    end_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
+                                    start_time: Joi.date().required(),
+                                    end_time: Joi.date().required(),
                                     price: Joi.number().min(0).required(),
                                 })
                             )
