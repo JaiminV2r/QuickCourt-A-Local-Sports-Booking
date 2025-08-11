@@ -118,7 +118,7 @@ module.exports = {
             { email: body.email, deleted_at: null },
             {},
             {
-                lean: true,
+                // lean: true,
                 populate: {
                     path: 'role',
                 },
