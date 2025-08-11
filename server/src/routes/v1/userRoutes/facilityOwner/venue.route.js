@@ -29,7 +29,7 @@
   //  */
   router.get(
     '/list',
-    auth(ROLES.owner),
+    auth(ROLES.facility_owner),
     validate(venueValidation.getAllVenues),
     venueControllers.getAllVenues
   );
