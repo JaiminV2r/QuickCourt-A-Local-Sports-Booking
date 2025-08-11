@@ -9,7 +9,7 @@ import { useVenuesQuery } from "../../../actions/venues"
 
 export default function OwnerFacilitiesPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("pending")
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState("grid")
   const facilitiesPerPage = 6
@@ -20,21 +20,24 @@ export default function OwnerFacilitiesPage() {
       q: searchQuery || undefined,
       page: currentPage,
       limit: facilitiesPerPage,
+      venue_status: statusFilter,
       // Add owner-specific filters if needed
     }
-  }, [searchQuery, currentPage])
+  }, [searchQuery, currentPage, statusFilter])
 
   // Fetch facilities data using the API
   const { data, isLoading, error } = useVenuesQuery(apiParams)
 
   // Process API response data
   const facilities = data?.data?.results || []
-  const total = data?.total || data?.count || data?.totalCount || 0
-  const totalPages = data?.totalPages || data?.pages || Math.ceil(total / facilitiesPerPage) || 1
+  const total = data?.data?.totalResults  ||0
+  const totalPages = data?.data?.totalPages || 1
+
+  console.log(totalPages , "totalPages")
 
   // Filter facilities based on status (if needed)
   const filteredFacilities = facilities.filter((facility) => {
-    if (statusFilter === "all") return true
+    if (statusFilter === "pending") return true
     // You can add status filtering logic here based on your API response structure
     return true
   })
@@ -147,6 +150,49 @@ export default function OwnerFacilitiesPage() {
             </div>
           </div>
 
+           {/* Quick Actions */}
+           <div className="my-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link
+                href="/owner/facilities/add"
+                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
+              >
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Plus className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">Add New Facility</div>
+                  <div className="text-sm text-gray-600">Register a new sports facility</div>
+                </div>
+              </Link>
+              <Link
+                href="/owner/bookings"
+                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
+              >
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">Manage Bookings</div>
+                  <div className="text-sm text-gray-600">View and manage all bookings</div>
+                </div>
+              </Link>
+              <Link
+                href="/owner/analytics"
+                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
+              >
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Star className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">View Analytics</div>
+                  <div className="text-sm text-gray-600">Track performance and insights</div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
           {/* Search and Filters */}
           <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
             <div className="flex flex-col md:flex-row gap-4">
@@ -166,10 +212,9 @@ export default function OwnerFacilitiesPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
                   <option value="pending">Pending</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
                 </select>
                 <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
                   <Filter className="w-4 h-4" />
@@ -368,48 +413,7 @@ export default function OwnerFacilitiesPage() {
             </div>
           )}
 
-          {/* Quick Actions */}
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link
-                href="/owner/facilities/add"
-                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
-              >
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Plus className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">Add New Facility</div>
-                  <div className="text-sm text-gray-600">Register a new sports facility</div>
-                </div>
-              </Link>
-              <Link
-                href="/owner/bookings"
-                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
-              >
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Clock className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">Manage Bookings</div>
-                  <div className="text-sm text-gray-600">View and manage all bookings</div>
-                </div>
-              </Link>
-              <Link
-                href="/owner/analytics"
-                className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
-              >
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Star className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">View Analytics</div>
-                  <div className="text-sm text-gray-600">Track performance and insights</div>
-                </div>
-              </Link>
-            </div>
-          </div>
+         
         </div>
   )
 }

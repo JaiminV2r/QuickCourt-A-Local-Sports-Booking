@@ -30,21 +30,24 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { useFacilitiesManagement } from "@/hooks/use-facilities"
 import { FacilityCard } from "@/components/facility-card"
 import { StatsCard, StatsGrid } from "@/components/stats-card"
 import { FacilitySearchFilters } from "@/components/facility-search-filters"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@radix-ui/react-dialog"
-import { DialogHeader } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from "@/components/ui/dialog"
+import { toast } from "react-toastify"
 
 export default function AdminFacilitiesPage() {
   const [rejectReason, setRejectReason] = useState("")
+  const [approvalComment, setApprovalComment] = useState("")
   const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false)
+  const [showFacilityDetailDialog, setShowFacilityDetailDialog] = useState(false)
   const [facilityToReject, setFacilityToReject] = useState(null)
-  const { toast } = useToast()
+  const [facilityToApprove, setFacilityToApprove] = useState(null)
+  const [selectedFacilityDetail, setSelectedFacilityDetail] = useState(null)
 
   // Custom hook for facilities management
   const {
@@ -74,72 +77,47 @@ export default function AdminFacilitiesPage() {
     try {
       const success = await refreshAllData()
       if (success) {
-        toast({
-          title: "Data refreshed",
-          description: "All facility data has been updated successfully.",
-        })
+        toast.success("All facility data has been updated successfully.")
       } else {
-        toast({
-          title: "Refresh failed",
-          description: "Failed to refresh facility data. Please try again.",
-          variant: "destructive",
-        })
+        toast.error("Failed to refresh facility data. Please try again.")
       }
     } catch (error) {
-      toast({
-        title: "Refresh failed",
-        description: "Failed to refresh facility data. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to refresh facility data. Please try again.")
     }
   }
 
   // Handle approve with better UX
-  const handleApprove = async (facilityId, facilityName) => {
+  const handleApprove = async (facilityId, facilityName, comment = '') => {
     try {
-      await approveMutation.mutateAsync({ id: facilityId, comment: '' })
-      toast({
-        title: "Facility approved",
-        description: `${facilityName} has been approved successfully.`,
-      })
-      setSelectedFacility(null) // Clear any previous selections
+      await approveMutation.mutateAsync({ id: facilityId, comment: comment.trim() })
+      toast.success(`${facilityName} has been approved successfully.`)
+      setShowApprovalDialog(false)
+      setFacilityToApprove(null)
+      setApprovalComment("")
     } catch (error) {
-      toast({
-        title: "Approval failed",
-        description: error.message || "Failed to approve facility. Please try again.",
-        variant: "destructive",
-      })
+      toast.error(error.message || "Failed to approve facility. Please try again.")
     }
   }
-  
+
+  // Open approval dialog
+  const openApprovalDialog = async(facility) => {
+    setFacilityToApprove(facility)
+    setShowApprovalDialog(true)
+  }
 
   // Handle reject with better UX
   const handleReject = async (facilityId, facilityName, reason) => {
     if (!reason?.trim()) {
-      toast({
-        title: "Reason required",
-        description: "Please provide a reason for rejection.",
-        variant: "destructive",
-      })
+      toast.error("Please provide a reason for rejection.")
       return
     }
   
     try {
       await rejectMutation.mutateAsync({ id: facilityId, reason: reason.trim() })
-      toast({
-        title: "Facility rejected",
-        description: `${facilityName} has been rejected with reason: ${reason}`,
-      })
-      setSelectedFacility(null)
-      setShowRejectDialog(false)
-      setFacilityToReject(null)
-      setRejectReason("")
+      toast.success(`${facilityName} has been rejected with reason: ${reason}`)
+      closeAllDialogs()
     } catch (error) {
-      toast({
-        title: "Rejection failed",
-        description: error.message || "Failed to reject facility. Please try again.",
-        variant: "destructive",
-      })
+      toast.error(error.message || "Failed to reject facility. Please try again.")
     }
   }
 
@@ -147,6 +125,24 @@ export default function AdminFacilitiesPage() {
   const openRejectDialog = (facility) => {
     setFacilityToReject(facility)
     setShowRejectDialog(true)
+  }
+
+  // Open facility detail dialog
+  const openFacilityDetail = (facility) => {
+    setSelectedFacilityDetail(facility)
+    setShowFacilityDetailDialog(true)
+  }
+
+  // Close all dialogs
+  const closeAllDialogs = () => {
+    setShowRejectDialog(false)
+    setShowApprovalDialog(false)
+    setShowFacilityDetailDialog(false)
+    setFacilityToReject(null)
+    setFacilityToApprove(null)
+    setSelectedFacilityDetail(null)
+    setRejectReason("")
+    setApprovalComment("")
   }
 
   // Clear filters function
@@ -229,31 +225,21 @@ export default function AdminFacilitiesPage() {
           title="Pending Approval"
           value={stats.totalPending}
           icon={Clock}
-          color="yellow"
-          trend="up"
-          trendValue="+2 this week"
         />
         <StatsCard
           title="Approved"
           value={stats.totalApproved}
           icon={Award}
-          color="green"
-          trend="up"
-          trendValue="+5 this month"
         />
         <StatsCard
           title="Rejected"
           value={stats.totalRejected}
           icon={Ban}
-          color="red"
-          trend="down"
-          trendValue="-1 this week"
         />
         <StatsCard
           title="Total Applications"
           value={stats.totalFacilities}
           icon={Activity}
-          color="blue"
         />
       </StatsGrid>
 
@@ -482,152 +468,62 @@ export default function AdminFacilitiesPage() {
                       <div className="flex flex-col gap-3 lg:ml-6">
                         {activeTab === "pending" && (
                           <>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" className="w-full">
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>{facility.name}</DialogTitle>
-                                  <DialogDescription>
-                                    Review facility details before making a decision
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-6">
-                                  {/* Owner Information */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                      <h3 className="font-semibold mb-3">Owner Information</h3>
-                                      <div className="space-y-2 text-sm">
-                                        <p><strong>Name:</strong> {facility.owner}</p>
-                                        <p><strong>Email:</strong> {facility.email}</p>
-                                        <p><strong>Phone:</strong> {facility.phone}</p>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <h3 className="font-semibold mb-3">Facility Details</h3>
-                                      <div className="space-y-2 text-sm">
-                                        <p><strong>Location:</strong> {facility.location}</p>
-                                        <p><strong>Address:</strong> {facility.address}</p>
-                                        <p><strong>Courts:</strong> {facility.courts}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Images */}
-                                  {facility.images && facility.images.length > 0 && (
-                                    <div>
-                                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                                        <ImageIcon className="w-4 h-4" />
-                                        Facility Images
-                                      </h3>
-                                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {facility.images.map((image, index) => (
-                                          <img
-                                            key={index}
-                                            src={image || "/placeholder.svg"}
-                                            alt={`${facility.name} - Image ${index + 1}`}
-                                            className="w-full h-32 object-cover rounded-lg"
-                                          />
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Action Buttons */}
-                                  <div className="flex justify-end gap-3 pt-4 border-t">
-                                    <Button
-                                      onClick={() => handleApprove(facility.id, facility.name)}
-                                      disabled={approveMutation.isPending}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      {approveMutation.isPending ? (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      ) : (
-                                        <Check className="w-4 h-4 mr-2" />
-                                      )}
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      onClick={() => openRejectDialog(facility)}
-                                      disabled={rejectMutation.isPending}
-                                      variant="destructive"
-                                    >
-                                      <X className="w-4 h-4 mr-2" />
-                                      Reject
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                            
                             <Button
-  onClick={() => handleApprove(facility.id, facility.name)}
-  disabled={approveMutation.isPending}
-  className="w-full bg-green-600 hover:bg-green-700"
->
-  {approveMutation.isPending ? (
-    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-  ) : (
-    <Check className="w-4 h-4 mr-2" />
-  )}
-  Approve
-</Button>
-                            
-                            <Button
-                              onClick={() => openRejectDialog(facility)}
-                              disabled={rejectMutation.isPending}
+                              onClick={() => openFacilityDetail(facility)}
                               variant="outline"
-                              className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                              className="w-full mb-2"
                             >
-                              <X className="w-4 h-4 mr-2" />
-                              Reject
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
                             </Button>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                onClick={() => openApprovalDialog(facility)}
+                                disabled={approveMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                {approveMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Check className="w-4 h-4 mr-1" />
+                                )}
+                                Approve
+                              </Button>
+                              
+                              <Button
+                                onClick={() => openRejectDialog(facility)}
+                                disabled={rejectMutation.isPending}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                            
+                            {/* <Button
+                              onClick={() => quickApprove(facility.id, facility.name)}
+                              disabled={approveMutation.isPending}
+                              variant="ghost"
+                              className="w-full text-green-600 hover:bg-green-50 text-xs"
+                            >
+                              Quick Approve (No Comment)
+                            </Button> */}
                           </>
+
                         )}
                         
                         {activeTab === "approved" && (
                           <>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" className="w-full">
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>{facility.name}</DialogTitle>
-                                  <DialogDescription>
-                                    Approved facility details
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-6">
-                                  {/* Same content as pending but without action buttons */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                      <h3 className="font-semibold mb-3">Owner Information</h3>
-                                      <div className="space-y-2 text-sm">
-                                        <p><strong>Name:</strong> {facility.owner}</p>
-                                        <p><strong>Email:</strong> {facility.email}</p>
-                                        <p><strong>Phone:</strong> {facility.phone}</p>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <h3 className="font-semibold mb-3">Facility Details</h3>
-                                      <div className="space-y-2 text-sm">
-                                        <p><strong>Location:</strong> {facility.location}</p>
-                                        <p><strong>Address:</strong> {facility.address}</p>
-                                        <p><strong>Courts:</strong> {facility.courts}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
+                            <Button
+                              onClick={() => openFacilityDetail(facility)}
+                              variant="outline"
+                              className="w-full"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </Button>
                             
                             <div className="text-center">
                               <Badge className="bg-green-100 text-green-800 border-green-200">
@@ -638,43 +534,16 @@ export default function AdminFacilitiesPage() {
                         )}
                         
                         {activeTab === "rejected" && (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" className="w-full">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>{facility.name}</DialogTitle>
-                                <DialogDescription>
-                                  Rejected facility details
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-6">
-                                {/* Same content as pending but without action buttons */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  <div>
-                                    <h3 className="font-semibold mb-3">Owner Information</h3>
-                                    <div className="space-y-2 text-sm">
-                                      <p><strong>Name:</strong> {facility.owner}</p>
-                                      <p><strong>Email:</strong> {facility.email}</p>
-                                      <p><strong>Phone:</strong> {facility.phone}</p>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <h3 className="font-semibold mb-3">Facility Details</h3>
-                                    <div className="space-y-2 text-sm">
-                                      <p><strong>Location:</strong> {facility.location}</p>
-                                      <p><strong>Address:</strong> {facility.address}</p>
-                                      <p><strong>Courts:</strong> {facility.courts}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <>
+                            <Button
+                              onClick={() => openFacilityDetail(facility)}
+                              variant="outline"
+                              className="w-full"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -685,6 +554,46 @@ export default function AdminFacilitiesPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Approve Facility Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Facility</DialogTitle>
+            <DialogDescription>
+              Approve {facilityToApprove?.name} with an optional comment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Enter optional approval comment..."
+              value={approvalComment}
+              onChange={(e) => setApprovalComment(e.target.value)}
+              rows={3}
+            />
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={closeAllDialogs}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleApprove(facilityToApprove?.id, facilityToApprove?.name, approvalComment)}
+                disabled={approveMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {approveMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Approve Facility
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Reject Facility Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
@@ -705,11 +614,7 @@ export default function AdminFacilitiesPage() {
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setShowRejectDialog(false)
-                  setFacilityToReject(null)
-                  setRejectReason("")
-                }}
+                onClick={closeAllDialogs}
               >
                 Cancel
               </Button>
@@ -727,6 +632,157 @@ export default function AdminFacilitiesPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Facility Detail Dialog */}
+      <Dialog open={showFacilityDetailDialog} onOpenChange={setShowFacilityDetailDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building className="w-5 h-5" />
+              {selectedFacilityDetail?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Complete facility details and photos
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedFacilityDetail && (
+            <div className="space-y-6">
+              {/* Status Badge */}
+              <div className="flex justify-between items-center">
+                <Badge 
+                  className={
+                    selectedFacilityDetail.status === 'approved' 
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : selectedFacilityDetail.status === 'rejected'
+                      ? "bg-red-100 text-red-800 border-red-200"
+                      : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                  }
+                >
+                  {selectedFacilityDetail.status?.charAt(0).toUpperCase() + selectedFacilityDetail.status?.slice(1)}
+                </Badge>
+                <div className="text-sm text-gray-500">
+                  Submitted: {new Date(selectedFacilityDetail.submittedDate).toLocaleDateString()}
+                </div>
+              </div>
+
+              {/* Photos Section */}
+              {selectedFacilityDetail.photos && selectedFacilityDetail.photos.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    Facility Photos
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedFacilityDetail.photos.map((photo, index) => (
+                      <div key={index} className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        <img 
+                          src={photo} 
+                          alt={`Facility photo ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                          onClick={() => window.open(photo, '_blank')}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Owner and Facility Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Owner Information
+                  </h3>
+                  <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg">
+                    <p><strong>Name:</strong> {selectedFacilityDetail.owner}</p>
+                    <p className="flex items-center gap-2">
+                      <Mail className="w-3 h-3" />
+                      <strong>Email:</strong> {selectedFacilityDetail.ownerEmail}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone className="w-3 h-3" />
+                      <strong>Phone:</strong> {selectedFacilityDetail.ownerPhone}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Facility Details
+                  </h3>
+                  <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg">
+                    <p><strong>Location:</strong> {selectedFacilityDetail.location}</p>
+                    <p><strong>Sports:</strong> {selectedFacilityDetail.sports?.join(', ') || 'N/A'}</p>
+                    <p><strong>Amenities:</strong> {selectedFacilityDetail.amenities?.join(', ') || 'N/A'}</p>
+                    {selectedFacilityDetail.rating && (
+                      <p className="flex items-center gap-2">
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        <strong>Rating:</strong> {selectedFacilityDetail.rating}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedFacilityDetail.description && (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Description
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm">
+                    {selectedFacilityDetail.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons for Pending Facilities */}
+              {selectedFacilityDetail.status === 'pending' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      setShowFacilityDetailDialog(false)
+                      openApprovalDialog(selectedFacilityDetail)
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Approve with Comment
+                  </Button>
+                  {/* <Button
+                    onClick={() => quickApprove(selectedFacilityDetail.id, selectedFacilityDetail.name)}
+                    variant="outline"
+                    className="border-green-300 text-green-600 hover:bg-green-50"
+                    disabled={approveMutation.isPending}
+                  >
+                    {approveMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-2" />
+                    )}
+                    Quick Approve
+                  </Button> */}
+                  <Button
+                    onClick={() => {
+                      setShowFacilityDetailDialog(false)
+                      openRejectDialog(selectedFacilityDetail)
+                    }}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

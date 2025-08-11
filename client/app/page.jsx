@@ -38,9 +38,26 @@ export default function HomePage() {
       setShowCityDropdown(true)
   }, [])
 
-  const searchVenuesByCity = useCallback((cityName) => {
-    // This is now handled automatically by the useVenuesByCity hook
-    // when selectedCity changes
+  // Search venues by city
+  const searchVenuesByCity = useCallback(async (cityName) => {
+    if (!cityName) return
+
+    setIsLoadingVenues(true)
+    try {
+      const response = await get(endpoints.venues.list, {
+        city: cityName,
+        limit: 4,
+        page: 1,
+      })
+      if (response.success) {
+        setVenues(response.data.results)
+      }
+    } catch (error) {
+      console.error('Error searching venues:', error)
+      setVenues([])
+    } finally {
+      setIsLoadingVenues(false)
+    }
   }, [])
 
   // Handle city selection

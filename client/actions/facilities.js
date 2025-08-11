@@ -124,33 +124,33 @@ export function useAdminFacilityStatsQuery() {
 export function useApproveFacilityMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, comment }) => put(endpoints.admin.facilities.approve(id), { comment }),
+    mutationFn: ({ id, comment }) => post(endpoints.admin.facilities.approve(id), { comment }),
     onMutate: async ({ id }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.pending })
-      await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.approved })
+      // // Cancel any outgoing refetches
+      // await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.pending })
+      // await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.approved })
       
-      // Snapshot the previous value
-      const previousPending = queryClient.getQueryData(queryKeys.admin.facilities.pending)
-      const previousApproved = queryClient.getQueryData(queryKeys.admin.facilities.approved)
+      // // Snapshot the previous value
+      // const previousPending = queryClient.getQueryData(queryKeys.admin.facilities.pending)
+      // const previousApproved = queryClient.getQueryData(queryKeys.admin.facilities.approved)
       
-      // Optimistically update the cache
-      if (previousPending?.data) {
-        const facility = previousPending.data.find(f => f.id === id)
-        if (facility) {
-          queryClient.setQueryData(queryKeys.admin.facilities.pending, {
-            ...previousPending,
-            data: previousPending.data.filter(f => f.id !== id)
-          })
+      // // Optimistically update the cache
+      // if (previousPending?.data?.venues?.length > 0) {
+      //   const facility = previousPending.data.venues.find(f => f.id === id)
+      //   if (facility) {
+      //     queryClient.setQueryData(queryKeys.admin.facilities.pending, {
+      //       ...previousPending,
+      //       data: previousPending.data.venues.filter(f => f.id !== id)
+      //     })
           
-          queryClient.setQueryData(queryKeys.admin.facilities.approved, {
-            ...previousApproved,
-            data: [...(previousApproved?.data || []), { ...facility, status: 'approved' }]
-          })
-        }
-      }
+      //     queryClient.setQueryData(queryKeys.admin.facilities.approved, {
+      //       ...previousApproved,
+      //       data: [...(previousApproved?.data || []), { ...facility, status: 'approved' }]
+      //     })
+      //   }
+      // }
       
-      return { previousPending, previousApproved }
+      // return { previousPending, previousApproved }
     },
     onError: (err, variables, context) => {
       // Rollback on error
@@ -167,44 +167,46 @@ export function useApproveFacilityMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.facilities.approved })
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.facilities.stats })
     },
+    retry: 3,
+    retryDelay: 5000,
   })
 }
 
 export function useRejectFacilityMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reason }) => put(endpoints.admin.facilities.reject(id), { reason }),
+    mutationFn: ({ id, reason }) => post(endpoints.admin.facilities.reject(id), { reason }),
     onMutate: async ({ id, reason }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.pending })
-      await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.rejected })
+      // await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.pending })
+      // await queryClient.cancelQueries({ queryKey: queryKeys.admin.facilities.rejected })
       
-      // Snapshot the previous value
-      const previousPending = queryClient.getQueryData(queryKeys.admin.facilities.pending)
-      const previousRejected = queryClient.getQueryData(queryKeys.admin.facilities.rejected)
+      // // Snapshot the previous value
+      // const previousPending = queryClient.getQueryData(queryKeys.admin.facilities.pending)
+      // const previousRejected = queryClient.getQueryData(queryKeys.admin.facilities.rejected)
       
-      // Optimistically update the cache
-      if (previousPending?.data) {
-        const facility = previousPending.data.find(f => f.id === id)
-        if (facility) {
-          queryClient.setQueryData(queryKeys.admin.facilities.pending, {
-            ...previousPending,
-            data: previousPending.data.filter(f => f.id !== id)
-          })
+      // // Optimistically update the cache
+      // if (previousPending?.data?.venues?.length > 0) {
+      //   const facility = previousPending.data.venues.find(f => f.id === id)
+      //   if (facility) {
+      //     queryClient.setQueryData(queryKeys.admin.facilities.pending, {
+      //       ...previousPending,
+      //       data: previousPending.data.venues.filter(f => f.id !== id)
+      //     })
           
-          queryClient.setQueryData(queryKeys.admin.facilities.rejected, {
-            ...previousRejected,
-            data: [...(previousRejected?.data || []), { 
-              ...facility, 
-              status: 'rejected',
-              rejectionReason: reason,
-              rejectedDate: new Date().toISOString()
-            }]
-          })
-        }
-      }
+      //     queryClient.setQueryData(queryKeys.admin.facilities.rejected, {
+      //       ...previousRejected,
+      //       data: [...(previousRejected?.data || []), { 
+      //         ...facility, 
+      //         status: 'rejected',
+      //         rejectionReason: reason,
+      //         rejectedDate: new Date().toISOString()
+      //       }]
+      //     })
+      //   }
+      // }
       
-      return { previousPending, previousRejected }
+      // return { previousPending, previousRejected }
     },
     onError: (err, variables, context) => {
       // Rollback on error
@@ -221,6 +223,8 @@ export function useRejectFacilityMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.facilities.rejected })
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.facilities.stats })
     },
+    retry: 3,
+    retryDelay: 5000,
   })
 }
 
