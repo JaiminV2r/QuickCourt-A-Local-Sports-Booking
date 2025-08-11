@@ -1,12 +1,16 @@
 export const queryKeys = {
   auth: ['auth'],
   admin: {
-    stats: ['admin', 'stats'],
-    charts: ['admin', 'charts'],
+    dashboard: {
+      stats: ['admin', 'dashboard', 'stats'],
+      charts: ['admin', 'dashboard', 'charts'],
+      activities: ['admin', 'dashboard', 'activities'],
+    },
     facilities: {
       pending: ['admin', 'facilities', 'pending'],
       approved: ['admin', 'facilities', 'approved'],
       rejected: ['admin', 'facilities', 'rejected'],
+      stats: ['admin', 'facilities', 'stats'],
       detail: (id) => ['admin', 'facilities', id],
     },
     users: {
@@ -16,6 +20,7 @@ export const queryKeys = {
     },
     reports: {
       all: ['admin', 'reports'],
+      stats: ['admin', 'reports', 'stats'],
       detail: (id) => ['admin', 'reports', id],
     },
     profile: ['admin', 'profile'],

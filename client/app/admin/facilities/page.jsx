@@ -32,17 +32,17 @@ export default function AdminFacilitiesPage() {
   const getCurrentFacilities = () => {
     switch (activeTab) {
       case "pending":
-        return pendingFacilities
+        return pendingFacilities?.data
       case "approved":
-        return approvedFacilities
+        return approvedFacilities?.data
       case "rejected":
-        return rejectedFacilities
+        return rejectedFacilities?.data
       default:
         return []
     }
   }
 
-  const filteredFacilities = getCurrentFacilities().filter(
+  const filteredFacilities = getCurrentFacilities()?.filter(
     (facility) =>
       facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       facility.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,14 +133,14 @@ export default function AdminFacilitiesPage() {
 
           {/* Facilities List */}
           <div className="space-y-4 md:space-y-6">
-            {filteredFacilities.length === 0 ? (
+            {filteredFacilities?.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border p-8 md:p-12 text-center">
                 <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No facilities found</h3>
                 <p className="text-gray-600">No facilities match the selected criteria.</p>
               </div>
             ) : (
-              filteredFacilities.map((facility) => (
+              filteredFacilities?.map((facility) => (
                 <div
                   key={facility.id}
                   className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow"

@@ -6,11 +6,7 @@ import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
 function computeRoleKey(apiRole) {
-  const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
-  const s = base.toString().toLowerCase()
-  if (s.includes('admin')) return 'admin'
-  if (s.includes('owner') || s.includes('facility')) return 'owner'
-  return 'player'
+  return apiRole?.role
 }
 
 function setUserCookie(user) {
@@ -107,18 +103,6 @@ export function useLogoutMutation() {
   return useMutation({
     mutationFn: (payload) => post(endpoints.auth.logout, payload),
   })
-}
-
-// Admin: mock me endpoint if backend not present
-export async function ensureMockMe(user) {
-  if (typeof window === 'undefined') return user
-  try {
-    const stored = localStorage.getItem('quickcourt_user')
-    if (!stored && user) {
-      localStorage.setItem('quickcourt_user', JSON.stringify(user))
-    }
-  } catch {}
-  return user
 }
 
 // Admin: mock me endpoint if backend not present

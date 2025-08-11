@@ -36,18 +36,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("quickcourt_user")
-    if (storedUser) setUser(JSON.parse(storedUser))
+    if (storedUser) {
+      const user = JSON.parse(storedUser)
+      console.log('🔥🔥🔥🔥user🔥🔥🔥🔥🔥',user);
+      setUser(user)
+    }
     setLoading(false)
   }, [])
 
   function normalizeRoleFromUser(apiUser) {
-    const apiRole = apiUser?.role
+    const apiRole = apiUser?.role?.role
     if (!apiRole) return null
-    const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
-    const s = base.toString().toLowerCase()
-    if (s.includes('admin')) return 'admin'
-    if (s.includes('owner') || s.includes('facility')) return 'owner'
-    return 'player'
+    return apiRole
   }
 
   const login = async (email, password) => {
@@ -58,10 +58,9 @@ export function AuthProvider({ children }) {
       const userForState = { ...apiUser, role: roleKey }
       setUser(userForState)
       setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
-      return userForState
     }
-    // When email not verified, server responds with success true and message, but no data.user
-    return null
+    // Return full response so callers can handle OTP/not-verified flows and messages
+    return res
   }
 
   const signup = async (payload) => {
@@ -95,9 +94,9 @@ export function AuthProvider({ children }) {
       const userForState = { ...apiUser, role: roleKey }
       setUser(userForState)
       setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
-      return true
     }
-    return false
+    // Return full response to allow callers to inspect success/message
+    return res
   }
 
   const value = {

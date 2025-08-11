@@ -1,9 +1,8 @@
 import * as Yup from 'yup'
 
-// Mirror backend password rules:
-// /^(?=.*[A-Z])(?=.*\d)(?=.*[@#])[A-Za-z\d@#]{8,20}$/
-const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@#])[A-Za-z\d@#]{8,20}$/
-const passwordMessage = 'Use 8-20 characters with at least one uppercase letter, one number, and one special symbol like @ or #'
+// Password: 8-20 chars, at least one uppercase, one number, and one special symbol (allow any non-alphanumeric, no spaces)
+const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,20}$/
+const passwordMessage = 'Use 8-20 characters with at least one uppercase letter, one number, and one special symbol'
 
 export const loginSchema = Yup.object({
   email: Yup.string().email('Invalid email').required('Email is required'),

@@ -22,6 +22,11 @@ const envVarsSchema = Joi.object()
         SMTP_PASSWORD: Joi.string().description('password for email server'),
         EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
         BASE_URL: Joi.string().required().description('Base url'),
+        CLOUDINARY_CLOUD_NAME: Joi.string().required().description('Cloudinary cloud name'),
+        CLOUDINARY_API_KEY: Joi.string().required().description('Cloudinary API key'),
+        CLOUDINARY_API_SECRET: Joi.string().required().description('Cloudinary API secret'),
+        CLOUDINARY_SECURE: Joi.boolean().default(true).description('Use secure URLs for Cloudinary'),
+        CLOUDINARY_BASE_FOLDER: Joi.string().default('quickcourt').description('Base folder in Cloudinary'),
     })
     .unknown()
 
@@ -59,4 +64,11 @@ module.exports = {
     },
     base_url: envVars.BASE_URL,
     front_url: envVars.FRONT_URL,
+    cloudinary: {
+        cloud_name: envVars.CLOUDINARY_CLOUD_NAME,
+        api_key: envVars.CLOUDINARY_API_KEY,
+        api_secret: envVars.CLOUDINARY_API_SECRET,
+        secure: envVars.CLOUDINARY_SECURE,
+        base_folder: envVars.CLOUDINARY_BASE_FOLDER,
+    },
 }

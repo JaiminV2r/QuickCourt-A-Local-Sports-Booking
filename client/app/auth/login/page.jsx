@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useLoginMutation } from "../../../actions/auth"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
 import { Formik, Form } from "formik"
@@ -10,14 +9,14 @@ import TextField from "../../../components/formik/TextField"
 import { loginSchema } from "../../../validation/schemas"
 import { toast } from "react-toastify"
 import { useAuth } from "../../../contexts/auth-context"
+import { ROLES } from "@/lib/constant"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const loginMutation = useLoginMutation()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, login } = useAuth()
 
   useEffect(() => {
     if (user) {
@@ -28,10 +27,22 @@ export default function LoginPage() {
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
-      const res = await loginMutation.mutateAsync({ email: values.email, password: values.password })
+      const res = await login(values.email, values.password)
       if (res?.success && res?.data?.user) {
         toast.success("Signed in. Welcome back!")
-        router.replace("/")
+        console.log('🔥🔥🔥🔥res.data.user🔥🔥🔥🔥🔥',res.data.user);
+        
+        // Redirect based on user role
+        const userRole = res.data.user.role.role
+        console.log('🔥🔥🔥🔥userRole🔥🔥🔥🔥🔥',userRole);
+
+        if (userRole === ROLES.admin) {
+          router.replace("/admin")
+        } else if (userRole === ROLES.facility_owner) {
+          router.replace("/owner")
+        } else {
+          router.replace("/")
+        }
       } else if (res?.success && res?.isEmailNotVerify) {
         toast.info('OTP sent to your email')
         router.replace(`/auth/signup?email=${encodeURIComponent(values.email)}&step=2`)
@@ -85,10 +96,6 @@ export default function LoginPage() {
                 />
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
               <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                 Forgot password?
               </Link>

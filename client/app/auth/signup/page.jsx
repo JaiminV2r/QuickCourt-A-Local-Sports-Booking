@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useRegisterMutation, useVerifyOtpMutation, useRolesQuery, useSendOtpMutation } from "../../../actions/auth"
+import { useRegisterMutation, useRolesQuery, useSendOtpMutation } from "../../../actions/auth"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
 import { Formik, Form } from "formik"
@@ -10,6 +10,7 @@ import TextField from "../../../components/formik/TextField"
 import { signupSchema } from "../../../validation/schemas"
 import { toast } from "react-toastify"
 import { useAuth } from "../../../contexts/auth-context"
+import { ROLES } from "@/lib/constant"
 
 export default function SignupPage() {
   const [step, setStep] = useState(1) // 1: Form, 2: OTP
@@ -27,12 +28,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
 
   const registerMutation = useRegisterMutation()
-  const verifyOtpMutation = useVerifyOtpMutation()
   const sendOtpMutation = useSendOtpMutation()
   const { data: roles = [], isLoading: rolesLoading } = useRolesQuery()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const { user, verifyOTP } = useAuth()
 
   useEffect(() => {
     if (user) {
@@ -70,10 +70,19 @@ export default function SignupPage() {
     if (code.length === 6 && newOtp.every((d) => d !== "") && !verifying) {
       setVerifying(true)
       try {
-        const res = await verifyOtpMutation.mutateAsync({ email: formData.email, otp: code })
+        const res = await verifyOTP({ email: formData.email, otp: code })
         if (res?.success && res?.data?.user) {
           toast.success("Account created. Email verified.")
-          router.replace("/")
+          console.log('🔥🔥🔥🔥res.data.user🔥🔥🔥🔥🔥',res.data.user);
+          // Redirect based on user role
+          const userRole = res.data.user.role.role
+          if (userRole === ROLES.admin) {
+            router.replace("/admin")
+          } else if (userRole === ROLES.facility_owner) {
+            router.replace("/owner")
+          } else {
+            router.replace("/")
+          }
         } else {
           const message = res?.message || 'OTP invalid'
           toast.error(message)
@@ -99,7 +108,6 @@ export default function SignupPage() {
       setStep(2)
       toast.success(`OTP sent to ${payload.email}`)
     } catch (err) {
-      console.log('🔥🔥🔥🔥err?.message🔥🔥🔥🔥🔥',err);
       const message = err?.response?.data?.message || "Failed to send OTP. Please try again."
       toast.error(message)
     } finally {
@@ -179,7 +187,7 @@ export default function SignupPage() {
                           }`}
                         >
                           <div className="font-semibold">{r.role}</div>
-                          {r.role?.toLowerCase().includes('owner') ? (
+                          {r.role?.toLowerCase().includes(ROLES.facility_owner) ? (
                             <div className="text-sm text-gray-600">Manage facilities</div>
                           ) : (
                             <div className="text-sm text-gray-600">Book and play sports</div>
