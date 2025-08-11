@@ -28,6 +28,28 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Response interceptor to handle 401 errors globally
+api.interceptors.response.use(
+  (response) => {
+    // Return successful responses as-is
+    return response
+  },
+  (error) => {
+    // Handle 401 Unauthorized errors
+    if (error.response && error.response.status === 401) {
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        // Redirect to auth/login page
+        window.location.href = '/auth/login'
+      }
+    }
+    
+    // Re-throw the error so it can still be handled by individual API calls if needed
+    return Promise.reject(error)
+  }
+)
+
 function chooseClient(url) {
   if (typeof url === 'string' && url.startsWith('/api/')) {
     return axios

@@ -346,6 +346,7 @@ const getFacilityById = catchAsync(async (req, res) => {
 const approveFacility = catchAsync(async (req, res) => {
   try {
     const { id } = req.params;
+    const { comment } = req.body; // Optional comment for approval
     
     const venue = await Venue.findById(id);
     if (!venue) {
@@ -357,6 +358,13 @@ const approveFacility = catchAsync(async (req, res) => {
     }
 
     venue.venue_status = VENUE_STATUS.APPROVED;
+    
+    // Add approval comment if provided
+    if (comment && comment.trim()) {
+      venue.about = venue.about || [];
+      venue.about.push(`Approved: ${comment.trim()}`);
+    }
+    
     await venue.save();
 
     res.status(httpStatus.OK).json({
@@ -367,7 +375,8 @@ const approveFacility = catchAsync(async (req, res) => {
         name: venue.venue_name,
         status: venue.venue_status,
         approvedAt: venue.updatedAt,
-        approvedBy: req.user._id
+        approvedBy: req.user._id,
+        comment: comment || null
       }
     });
   } catch (error) {

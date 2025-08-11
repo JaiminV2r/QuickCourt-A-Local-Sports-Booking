@@ -36,7 +36,7 @@ export const endpoints = {
       bulkReject: '/admin/facilities/bulk-reject',
       detail: (id) => `/admin/facilities/${id}`,
       update: (id) => `/admin/facilities/${id}`,
-      delete: (id) => `/admin/facilities/${id}`,
+      delete: (id) => `/admin/facilities/${id}`
     },
     users: {
       list: '/admin/user/list',
