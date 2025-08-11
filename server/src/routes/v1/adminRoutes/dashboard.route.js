@@ -1,5 +1,5 @@
 const express = require('express');
-const auth = require('../../../middlewares/auth');
+const {auth} = require('../../../middlewares/auth');
 const { dashboardController } = require('../../../controllers/adminControllers');
 const validate = require('../../../middlewares/validate');
 const { ROLES } = require('../../../helper/constant.helper');
