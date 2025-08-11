@@ -18,6 +18,7 @@ export const endpoints = {
   venues: {
     list: '/user/facility-owners/venues',
     byId: (id) => `/venues/${id}`,
+    create: '/user/facility-owners/venues/create',
   },
   admin: {
     dashboard: {
@@ -69,6 +70,11 @@ export const endpoints = {
   venues: {
     list: '/user/facility-owners/venues/list',
     byId: (id) => `/user/facility-owners/venues/${id}`,
+    create: '/user/facility-owners/venues/create',
+    update: (id) => `/user/facility-owners/venues/update/${id}`,
+    courts: {
+      create: '/user/facility-owners/venues/court/create',
+    },
   },
   bookings: {
     list: '/api/bookings',
