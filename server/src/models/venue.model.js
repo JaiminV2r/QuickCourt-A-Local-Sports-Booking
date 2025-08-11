@@ -41,6 +41,9 @@ location: {
       type: String,
       enum: Object.values(VENUE_STATUS),
       default: VENUE_STATUS.PENDING,
+        reason: {
+            type: String,
+        },
     },
     // soft activity flag
     is_active: { type: Boolean, default: true, index: true },

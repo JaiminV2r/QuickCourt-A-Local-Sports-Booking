@@ -50,7 +50,8 @@ module.exports = {
             search: Joi.string().trim().allow(''),
             venue_status: Joi.string()
                 .valid(...Object.values(VENUE_STATUS))
-                .optional(),
+                .optional()
+                .allow(''),
             sort_by: Joi.string().trim().allow(''),
         }),
     },

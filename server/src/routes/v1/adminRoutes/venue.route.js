@@ -23,9 +23,9 @@ router.get(
 router.get('/get/:venueId', auth(ROLES.admin), venueController.getVenueById);
 
 /**
- * PATCH: Common endpoint to update venue status (approve/reject).
+ * Put: Common endpoint to update venue status (approve/reject).
  */
-router.patch(
+router.put(
     '/status/:venueId',
     auth(ROLES.admin),
     validate(venueValidation.updateVenueStatus),
