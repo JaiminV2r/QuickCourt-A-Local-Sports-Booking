@@ -8,7 +8,7 @@ const CourtSchema = new Schema({
     ref: 'Venue',
     required: true
   },
-  court_name: { type: String, required: true },
+  court_name: { type: [String], required: true },
   sport_type: { type: String, required: true },
   availability: [
     {
