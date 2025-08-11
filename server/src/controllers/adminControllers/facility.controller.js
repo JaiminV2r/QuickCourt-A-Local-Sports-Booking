@@ -1,49 +1,72 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../../utils/catchAsync');
-const { User } = require('../../models');
+const { Venue, User } = require('../../models');
 const ApiError = require('../../utils/apiError');
+const { VENUE_STATUS } = require('../../helper/constant.helper');
 
 /**
  * Get pending facilities for approval
  */
 const getPendingFacilities = catchAsync(async (req, res) => {
   try {
-    // For now, return mock data since facility model doesn't exist yet
-    // This will be updated when the facility model is created
-    const mockPendingFacilities = [
-      {
-        id: '1',
-        name: 'SportZone Arena',
-        owner: 'John Doe',
-        location: 'Mumbai, Maharashtra',
-        sports: ['Badminton', 'Tennis'],
-        submittedDate: '2 hours ago',
-        status: 'pending'
-      },
-      {
-        id: '2',
-        name: 'Champions Court',
-        owner: 'Jane Smith',
-        location: 'Delhi, NCR',
-        sports: ['Football', 'Cricket'],
-        submittedDate: '1 day ago',
-        status: 'pending'
-      },
-      {
-        id: '3',
-        name: 'Elite Sports Complex',
-        owner: 'Mike Johnson',
-        location: 'Bangalore, Karnataka',
-        sports: ['Basketball', 'Table Tennis'],
-        submittedDate: '3 days ago',
-        status: 'pending'
-      }
-    ];
+    const { page = 1, limit = 10, search } = req.query;
     
+    const filter = {
+      venue_status: VENUE_STATUS.PENDING,
+      is_active: true
+    };
+
+    // Add search functionality
+    if (search) {
+      filter.$or = [
+        { venue_name: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      populate: [
+        { path: 'owner_id', select: 'first_name last_name email phone' }
+      ],
+      sort: { createdAt: -1 }
+    };
+
+    const venues = await Venue.paginate(filter, options);
+
+    // Transform data for frontend
+    const transformedVenues = venues?.results?.map(venue => ({
+      id: venue._id,
+      name: venue.venue_name,
+      owner: `${venue.owner_id?.first_name || ''} ${venue.owner_id?.last_name || ''}`.trim() || 'N/A',
+      ownerEmail: venue.owner_id?.email || 'N/A',
+      ownerPhone: venue.owner_id?.phone || 'N/A',
+      location: `${venue.address}, ${venue.city}`,
+      sports: venue.sports || [],
+      amenities: venue.amenities || [],
+      description: venue.description || '',
+      photos: venue.photoUrls || [],
+      submittedDate: venue.createdAt,
+      status: venue.venue_status,
+      rating: venue.rating
+    }));
+
     res.status(httpStatus.OK).json({
       success: true,
       message: 'Pending facilities retrieved successfully',
-      data: mockPendingFacilities
+      data: {
+        venues: transformedVenues,
+        pagination: {
+          page: venues.page,
+          limit: venues.limit,
+          totalDocs: venues.totalDocs,
+          totalPages: venues.totalPages,
+          hasNextPage: venues.hasNextPage,
+          hasPrevPage: venues.hasPrevPage
+        }
+      }
     });
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error retrieving pending facilities');
@@ -55,32 +78,64 @@ const getPendingFacilities = catchAsync(async (req, res) => {
  */
 const getApprovedFacilities = catchAsync(async (req, res) => {
   try {
-    // Mock data for approved facilities
-    const mockApprovedFacilities = [
-      {
-        id: '4',
-        name: 'Royal Sports Center',
-        owner: 'Sarah Wilson',
-        location: 'Chennai, Tamil Nadu',
-        sports: ['Badminton', 'Tennis', 'Squash'],
-        approvedDate: '1 week ago',
-        status: 'approved'
-      },
-      {
-        id: '5',
-        name: 'Pro Sports Arena',
-        owner: 'David Brown',
-        location: 'Hyderabad, Telangana',
-        sports: ['Cricket', 'Football'],
-        approvedDate: '2 weeks ago',
-        status: 'approved'
-      }
-    ];
+    const { page = 1, limit = 10, search } = req.query;
     
+    const filter = {
+      venue_status: VENUE_STATUS.APPROVED,
+      is_active: true
+    };
+
+    // Add search functionality
+    if (search) {
+      filter.$or = [
+        { venue_name: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      populate: [
+        { path: 'owner_id', select: 'first_name last_name email phone' }
+      ],
+      sort: { updatedAt: -1 }
+    };
+
+    const venues = await Venue.paginate(filter, options);
+
+    // Transform data for frontend
+    const transformedVenues = venues?.results?.map(venue => ({
+      id: venue._id,
+      name: venue.venue_name,
+      owner: `${venue.owner_id?.first_name || ''} ${venue.owner_id?.last_name || ''}`.trim() || 'N/A',
+      ownerEmail: venue.owner_id?.email || 'N/A',
+      ownerPhone: venue.owner_id?.phone || 'N/A',
+      location: `${venue.address}, ${venue.city}`,
+      sports: venue.sports || [],
+      amenities: venue.amenities || [],
+      description: venue.description || '',
+      photos: venue.photoUrls || [],
+      approvedDate: venue.updatedAt,
+      status: venue.venue_status,
+      rating: venue.rating
+    }));
+
     res.status(httpStatus.OK).json({
       success: true,
       message: 'Approved facilities retrieved successfully',
-      data: mockApprovedFacilities
+      data: {
+        venues: transformedVenues,
+        pagination: {
+          page: venues.page,
+          limit: venues.limit,
+          totalDocs: venues.totalDocs,
+          totalPages: venues.totalPages,
+          hasNextPage: venues.hasNextPage,
+          hasPrevPage: venues.hasPrevPage
+        }
+      }
     });
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error retrieving approved facilities');
@@ -92,27 +147,196 @@ const getApprovedFacilities = catchAsync(async (req, res) => {
  */
 const getRejectedFacilities = catchAsync(async (req, res) => {
   try {
-    // Mock data for rejected facilities
-    const mockRejectedFacilities = [
-      {
-        id: '6',
-        name: 'Subpar Sports Hub',
-        owner: 'Tom Davis',
-        location: 'Pune, Maharashtra',
-        sports: ['Badminton'],
-        rejectedDate: '1 week ago',
-        status: 'rejected',
-        reason: 'Insufficient documentation and poor facility standards'
-      }
-    ];
+    const { page = 1, limit = 10, search } = req.query;
     
+    const filter = {
+      venue_status: VENUE_STATUS.REJECTED,
+      is_active: true
+    };
+
+    // Add search functionality
+    if (search) {
+      filter.$or = [
+        { venue_name: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      populate: [
+        { path: 'owner_id', select: 'first_name last_name email phone' }
+      ],
+      sort: { updatedAt: -1 }
+    };
+
+    const venues = await Venue.paginate(filter, options);
+
+    // Transform data for frontend
+    const transformedVenues = venues?.results?.map(venue => ({
+      id: venue._id,
+      name: venue.venue_name,
+      owner: `${venue.owner_id?.first_name || ''} ${venue.owner_id?.last_name || ''}`.trim() || 'N/A',
+      ownerEmail: venue.owner_id?.email || 'N/A',
+      ownerPhone: venue.owner_id?.phone || 'N/A',
+      location: `${venue.address}, ${venue.city}`,
+      sports: venue.sports || [],
+      amenities: venue.amenities || [],
+      description: venue.description || '',
+      photos: venue.photoUrls || [],
+      rejectedDate: venue.updatedAt,
+      status: venue.venue_status,
+      rating: venue.rating
+    }));
+
     res.status(httpStatus.OK).json({
       success: true,
       message: 'Rejected facilities retrieved successfully',
-      data: mockRejectedFacilities
+      data: {
+        venues: transformedVenues,
+        pagination: {
+          page: venues.page,
+          limit: venues.limit,
+          totalDocs: venues.totalDocs,
+          totalPages: venues.totalPages,
+          hasNextPage: venues.hasNextPage,
+          hasPrevPage: venues.hasPrevPage
+        }
+      }
     });
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error retrieving rejected facilities');
+  }
+});
+
+/**
+ * Get all facilities with filtering and pagination
+ */
+const getAllFacilities = catchAsync(async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search, status, city, sport } = req.query;
+    
+    const filter = { is_active: true };
+
+    // Add status filter
+    if (status && Object.values(VENUE_STATUS).includes(status)) {
+      filter.venue_status = status;
+    }
+
+    // Add city filter
+    if (city) {
+      filter.city = { $regex: city, $options: 'i' };
+    }
+
+    // Add sport filter
+    if (sport) {
+      filter.sports = { $in: [sport] };
+    }
+
+    // Add search functionality
+    if (search) {
+      filter.$or = [
+        { venue_name: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      populate: [
+        { path: 'owner_id', select: 'first_name last_name email phone' }
+      ],
+      sort: { createdAt: -1 }
+    };
+
+    const venues = await Venue.paginate(filter, options);
+
+    // Transform data for frontend
+    const transformedVenues = venues?.results?.map(venue => ({
+      id: venue._id,
+      name: venue.venue_name,
+      owner: `${venue.owner_id?.first_name || ''} ${venue.owner_id?.last_name || ''}`.trim() || 'N/A',
+      ownerEmail: venue.owner_id?.email || 'N/A',
+      ownerPhone: venue.owner_id?.phone || 'N/A',
+      location: `${venue.address}, ${venue.city}`,
+      sports: venue.sports || [],
+      amenities: venue.amenities || [],
+      description: venue.description || '',
+      photos: venue.photoUrls || [],
+      status: venue.venue_status,
+      rating: venue.rating,
+      createdAt: venue.createdAt,
+      updatedAt: venue.updatedAt
+    }));
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: 'Facilities retrieved successfully',
+      data: {
+        venues: transformedVenues,
+        pagination: {
+          page: venues.page,
+          limit: venues.limit,
+          totalDocs: venues.totalDocs,
+          totalPages: venues.totalPages,
+          hasNextPage: venues.hasNextPage,
+          hasPrevPage: venues.hasPrevPage
+        }
+      }
+    });
+  } catch (error) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error retrieving facilities');
+  }
+});
+
+/**
+ * Get facility by ID
+ */
+const getFacilityById = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const venue = await Venue.findById(id)
+      .populate('owner_id', 'first_name last_name email phone')
+      .lean();
+
+    if (!venue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Facility not found');
+    }
+
+    // Transform data for frontend
+    const transformedVenue = {
+      id: venue._id,
+      name: venue.venue_name,
+      owner: `${venue.owner_id?.first_name || ''} ${venue.owner_id?.last_name || ''}`.trim() || 'N/A',
+      ownerEmail: venue.owner_id?.email || 'N/A',
+      ownerPhone: venue.owner_id?.phone || 'N/A',
+      location: `${venue.address}, ${venue.city}`,
+      sports: venue.sports || [],
+      amenities: venue.amenities || [],
+      description: venue.description || '',
+      photos: venue.photoUrls || [],
+      status: venue.venue_status,
+      rating: venue.rating,
+      about: venue.about || [],
+      video: venue.video,
+      coordinates: venue.location?.coordinates,
+      createdAt: venue.createdAt,
+      updatedAt: venue.updatedAt
+    };
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: 'Facility retrieved successfully',
+      data: transformedVenue
+    });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error retrieving facility');
   }
 });
 
@@ -123,20 +347,31 @@ const approveFacility = catchAsync(async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Mock approval logic - will be updated when facility model exists
-    // For now, just return success response
-    
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Facility not found');
+    }
+
+    if (venue.venue_status === VENUE_STATUS.APPROVED) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Facility is already approved');
+    }
+
+    venue.venue_status = VENUE_STATUS.APPROVED;
+    await venue.save();
+
     res.status(httpStatus.OK).json({
       success: true,
-      message: `Facility ${id} approved successfully`,
+      message: `Facility "${venue.venue_name}" approved successfully`,
       data: {
-        id,
-        status: 'approved',
-        approvedAt: new Date(),
+        id: venue._id,
+        name: venue.venue_name,
+        status: venue.venue_status,
+        approvedAt: venue.updatedAt,
         approvedBy: req.user._id
       }
     });
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error approving facility');
   }
 });
@@ -153,22 +388,95 @@ const rejectFacility = catchAsync(async (req, res) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Rejection reason is required');
     }
     
-    // Mock rejection logic - will be updated when facility model exists
-    // For now, just return success response
-    
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Facility not found');
+    }
+
+    if (venue.venue_status === VENUE_STATUS.REJECTED) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Facility is already rejected');
+    }
+
+    venue.venue_status = VENUE_STATUS.REJECTED;
+    venue.about = venue.about || [];
+    venue.about.push(`Rejected: ${reason}`); // Add rejection reason
+    await venue.save();
+
     res.status(httpStatus.OK).json({
       success: true,
-      message: `Facility ${id} rejected successfully`,
+      message: `Facility "${venue.venue_name}" rejected successfully`,
       data: {
-        id,
-        status: 'rejected',
-        rejectedAt: new Date(),
+        id: venue._id,
+        name: venue.venue_name,
+        status: venue.venue_status,
+        rejectedAt: venue.updatedAt,
         rejectedBy: req.user._id,
         reason
       }
     });
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error rejecting facility');
+  }
+});
+/**
+ * Toggle facility active status
+ */
+const toggleFacilityStatus = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Facility not found');
+    }
+
+    venue.is_active = !venue.is_active;
+    await venue.save();
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: `Facility "${venue.venue_name}" ${venue.is_active ? 'activated' : 'deactivated'} successfully`,
+      data: {
+        id: venue._id,
+        name: venue.venue_name,
+        is_active: venue.is_active,
+        updatedAt: venue.updatedAt
+      }
+    });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error toggling facility status');
+  }
+});
+
+/**
+ * Delete a facility (soft delete)
+ */
+const deleteFacility = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Facility not found');
+    }
+
+    venue.is_active = false;
+    await venue.save();
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: `Facility "${venue.venue_name}" deleted successfully`,
+      data: {
+        id: venue._id,
+        name: venue.venue_name,
+        deletedAt: venue.updatedAt
+      }
+    });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error deleting facility');
   }
 });
 
@@ -177,16 +485,50 @@ const rejectFacility = catchAsync(async (req, res) => {
  */
 const getFacilityStats = catchAsync(async (req, res) => {
   try {
-    // Mock facility statistics - will be updated when facility model exists
+    const [
+      totalFacilities,
+      pendingApproval,
+      approved,
+      rejected,
+      activeFacilities,
+      totalByCity,
+      totalBySport
+    ] = await Promise.all([
+      Venue.countDocuments({ is_active: true }),
+      Venue.countDocuments({ venue_status: VENUE_STATUS.PENDING, is_active: true }),
+      Venue.countDocuments({ venue_status: VENUE_STATUS.APPROVED, is_active: true }),
+      Venue.countDocuments({ venue_status: VENUE_STATUS.REJECTED, is_active: true }),
+      Venue.countDocuments({ venue_status: VENUE_STATUS.APPROVED, is_active: true }),
+      Venue.aggregate([
+        { $match: { is_active: true } },
+        { $group: { _id: '$city', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ]),
+      Venue.aggregate([
+        { $match: { is_active: true } },
+        { $unwind: '$sports' },
+        { $group: { _id: '$sports', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ])
+    ]);
+
+    // Calculate average rating
+    const ratingStats = await Venue.aggregate([
+      { $match: { is_active: true, 'rating.avg': { $gt: 0 } } },
+      { $group: { _id: null, avgRating: { $avg: '$rating.avg' }, totalRatings: { $sum: '$rating.count' } } }
+    ]);
+
     const stats = {
-      totalFacilities: 15,
-      pendingApproval: 3,
-      approved: 10,
-      rejected: 2,
-      activeFacilities: 8,
-      totalCourts: 45,
-      totalSports: 8,
-      averageRating: 4.2
+      totalFacilities,
+      pendingApproval,
+      approved,
+      rejected,
+      activeFacilities,
+      averageRating: ratingStats.length > 0 ? Math.round(ratingStats[0].avgRating * 10) / 10 : 0,
+      totalRatings: ratingStats.length > 0 ? ratingStats[0].totalRatings : 0,
+      topCities: totalByCity,
+      sportDistribution: totalBySport
     };
     
     res.status(httpStatus.OK).json({
@@ -203,7 +545,11 @@ module.exports = {
   getPendingFacilities,
   getApprovedFacilities,
   getRejectedFacilities,
+  getAllFacilities,
+  getFacilityById,
   approveFacility,
   rejectFacility,
+  toggleFacilityStatus,
+  deleteFacility,
   getFacilityStats
 };

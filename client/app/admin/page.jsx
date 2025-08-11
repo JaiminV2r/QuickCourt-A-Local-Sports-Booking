@@ -1,5 +1,9 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { ROLES } from "@/lib/constant"
 import { Users, Building, Calendar, DollarSign, Activity, CheckCircle, Clock, TrendingUp, AlertTriangle } from "lucide-react"
 import { 
   useAdminDashboardStatsQuery, 
@@ -10,24 +14,45 @@ import { ChartContainer, ChartLegend, ChartTooltip, ChartTooltipContent } from "
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from "recharts"
 
 export default function AdminDashboard() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  // Additional client-side protection
+  useEffect(() => {
+    if (!loading && (!user || user.role !== ROLES.admin)) {
+      console.log('🚫 Unauthorized access attempt to admin dashboard')
+      router.replace('/')
+    }
+  }, [user, loading, router])
+
+  // Show loading while checking auth
+  if (loading || !user || user.role !== ROLES.admin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 animate-pulse">
+            <span className="text-2xl font-bold text-white">QC</span>
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   const { data: dashboardData = [] } = useAdminDashboardStatsQuery()
   const { data: chartData = [] } = useAdminDashboardChartsQuery()
-  const { data: pending = [] } = useAdminPendingFacilitiesQuery()
   const statsData = dashboardData?.data
-  const charts = chartData?.data
+  // const charts = chartData?.data
   const stats = statsData
     ? [
         { title: "Total Users", value: statsData?.totalUsers?.toLocaleString() || '0', icon: Users, color: "from-blue-500 to-blue-600" },
-        { title: "Verified Users", value: statsData?.verifiedUsers?.toLocaleString() || '0', icon: CheckCircle, color: "from-green-500 to-green-600" },
-        
         { title: "Total Owners", value: statsData?.totalOwners?.toLocaleString() || '0', icon: Building, color: "from-green-500 to-green-600" },
         { title: "Total Bookings", value: statsData?.totalBookings?.toLocaleString() || '0', icon: Calendar, color: "from-purple-500 to-purple-600" },
         { title: "Active Courts", value: statsData?.totalActiveCourts?.toLocaleString() || '0', icon: DollarSign, color: "from-yellow-500 to-yellow-600" },
        
       ]
     : []
-
-  const pendingApprovals = pending?.data?.slice(0, 3)
 
   return (
     <>
@@ -56,11 +81,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* Charts Section */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8"> */}
             {/* Booking Activity Over Time */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Activity Over Time</h2>
-              {charts && (
+            {/* <div className="bg-white rounded-2xl shadow-sm border p-6"> */}
+              {/* <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Activity Over Time</h2> */}
+              {/* {charts && (
                 <ChartContainer
                   id="bookings"
                   config={{ bookings: { label: 'Bookings', color: '#3b82f6' } }}
@@ -75,11 +100,11 @@ export default function AdminDashboard() {
                     <Line type="monotone" dataKey="bookings" stroke="var(--color-bookings)" />
                   </LineChart>
                 </ChartContainer>
-              )}
-            </div>
+              )} */}
+            {/* </div> */}
 
             {/* User Registration Trends */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
+            {/* <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">User Registration Trends</h2>
               {charts && (
                 <ChartContainer id="users" config={{ users: { label: 'Users', color: '#10b981' } }} className="h-64">
@@ -93,13 +118,13 @@ export default function AdminDashboard() {
                   </BarChart>
                 </ChartContainer>
               )}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
 
           {/* Additional Charts */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8"> */}
             {/* Facility Approval Trend */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
+            {/* <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Facility Approval Trend</h2>
               {charts && (
                 <ChartContainer id="approvals" config={{ approved: { label: 'Approved', color: '#f59e0b' } }} className="h-64">
@@ -113,10 +138,10 @@ export default function AdminDashboard() {
                   </LineChart>
                 </ChartContainer>
               )}
-            </div>
+            </div> */}
 
             {/* Earnings Simulation Chart */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
+            {/* <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Earnings Simulation</h2>
               {charts && (
                 <ChartContainer id="earnings" config={{ amount: { label: 'Earnings (₹)', color: '#8b5cf6' } }} className="h-64">
@@ -130,11 +155,11 @@ export default function AdminDashboard() {
                   </LineChart>
                 </ChartContainer>
               )}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
 
           {/* Most Active Sports */}
-          <div className="mt-8 grid grid-cols-1">
+          {/* <div className="mt-8 grid grid-cols-1">
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Most Active Sports</h2>
               {charts && (
@@ -150,7 +175,7 @@ export default function AdminDashboard() {
                 </ChartContainer>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
     </>
   )

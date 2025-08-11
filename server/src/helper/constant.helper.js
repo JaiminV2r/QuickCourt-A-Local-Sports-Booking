@@ -61,6 +61,7 @@ module.exports = {
         'Basketball',
         'Tennis',
         'Cricket',
+        'Table Tennis',
     ],
 
     AMENITIES:[
@@ -69,6 +70,15 @@ module.exports = {
         'Food',
         'Drinks',
         'Equipment'
-    ]
+    ],
+
+    SPORT_TYPE_ICON:{
+        'Badminton': '🏸',
+        'Football': '⚽',
+        'Basketball': '🏀',
+        'Tennis': '🎾',
+        'Cricket': '🏏',
+        'Table Tennis': '🏓',
+    },
 
 }

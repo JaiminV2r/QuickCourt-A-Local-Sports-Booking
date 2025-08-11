@@ -4,61 +4,43 @@ import { useAuth } from "../contexts/auth-context"
 import { Search, MapPin, Star, Users, ChevronRight, Calendar, Clock, X } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
-import { get } from "../services/api-client"
-import { endpoints } from "../services/endpoints"
+import { useSportsStats } from "../hooks/use-sports"
+import { useCitiesSearch } from "../hooks/use-cities"
+import { useVenuesByCity } from "../hooks/use-venues"
 
 export default function HomePage() {
   const { user } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCity, setSelectedCity] = useState("")
-  const [cities, setCities] = useState([])
-  const [venues, setVenues] = useState([])
-  const [isLoadingCities, setIsLoadingCities] = useState(false)
-  const [isLoadingVenues, setIsLoadingVenues] = useState(false)
   const [showCityDropdown, setShowCityDropdown] = useState(false)
   const greetingName = user?.name?.split(" ")[0] ?? "Player"
 
-  // Debounced city search
-  const searchCities = useCallback(async (query) => {
-    setIsLoadingCities(true)
-    try {
-      const response = await get(endpoints.city.list, {
-        search: query,
-        limit: 50,
-        page: 1
-      })
-      if (response.success) {
-        setCities(response.data.results)
-        setShowCityDropdown(true)
-      }
-    } catch (error) {
-      console.error('Error searching cities:', error)
-      setCities([])
-    } finally {
-      setIsLoadingCities(false)
-    }
+  // React Query hooks
+  const { 
+    data: sports = [], 
+    isLoading: isLoadingSports, 
+    error: sportsError,
+    refetch: refetchSports 
+  } = useSportsStats()
+  
+  const { 
+    data: cities = [], 
+    isLoading: isLoadingCities 
+  } = useCitiesSearch(searchQuery, showCityDropdown)
+  
+  const { 
+    data: venues = [], 
+    isLoading: isLoadingVenues 
+  } = useVenuesByCity(selectedCity, !!selectedCity)
+
+  // Simplified functions - data fetching now handled by React Query
+  const searchCities = useCallback((query) => {
+      setShowCityDropdown(true)
   }, [])
 
-  // Search venues by city
-  const searchVenuesByCity = useCallback(async (cityName) => {
-    if (!cityName) return
-
-    setIsLoadingVenues(true)
-    try {
-      const response = await get(endpoints.venues.list, {
-        city: cityName,
-        limit: 4,
-        page: 1
-      })
-      if (response.success) {
-        setVenues(response.data.results)
-      }
-    } catch (error) {
-      console.error('Error searching venues:', error)
-      setVenues([])
-    } finally {
-      setIsLoadingVenues(false)
-    }
+  const searchVenuesByCity = useCallback((cityName) => {
+    // This is now handled automatically by the useVenuesByCity hook
+    // when selectedCity changes
   }, [])
 
   // Handle city selection
@@ -66,7 +48,7 @@ export default function HomePage() {
     setSelectedCity(city.name)
     setSearchQuery(city.name)
     setShowCityDropdown(false)
-    searchVenuesByCity(city.name)
+    // Venues will be fetched automatically by useVenuesByCity hook
   }
 
   // Handle search input change
@@ -80,21 +62,19 @@ export default function HomePage() {
   const clearSearch = () => {
     setSearchQuery("")
     setSelectedCity("")
-    setCities([])
-    setVenues([])
     setShowCityDropdown(false)
+    // Data will be cleared automatically by React Query when dependencies change
   }
 
   // Effect to search cities when query changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery.length >= 3) {
         searchCities(searchQuery)
-      }
     }, 300)
-
     return () => clearTimeout(timeoutId)
   }, [searchQuery, searchCities])
+
+  // Sports data is automatically fetched by React Query on component mount
 
   // Click outside handler to close dropdown
   useEffect(() => {
@@ -108,7 +88,8 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showCityDropdown])
 
-  const popularSports = [
+  // Fallback sports data if API fails
+  const fallbackSports = [
     { name: "Badminton", icon: "🏸", venues: 45, color: "from-red-400 to-red-500" },
     { name: "Tennis", icon: "🎾", venues: 32, color: "from-green-400 to-green-500" },
     { name: "Football", icon: "⚽", venues: 28, color: "from-blue-400 to-blue-500" },
@@ -198,6 +179,11 @@ export default function HomePage() {
                   onChange={handleSearchChange}
                   className="w-full pl-12 pr-32 py-4 text-gray-900 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-lg"
                 />
+                {isLoadingCities && (
+                  <div className="absolute right-28 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
                 {searchQuery && (
                   <button
                     onClick={clearSearch}
@@ -298,22 +284,72 @@ export default function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Sport</h2>
             <p className="text-gray-600 text-lg">What would you like to play today?</p>
+            {sportsError && (
+              <button
+                onClick={() => refetchSports()}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+              >
+                Retry Loading Sports
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {popularSports.map((sport, index) => (
-              <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
-                <div
-                  className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
-                >
-                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                    {sport.icon}
-                  </div>
-                  <h3 className="font-semibold mb-1">{sport.name}</h3>
-                  <p className="text-sm opacity-90">{sport.venues} venues</p>
+            {isLoadingSports ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="bg-gray-200 p-6 rounded-3xl animate-pulse">
+                  <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-3"></div>
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mx-auto"></div>
                 </div>
-              </Link>
-            ))}
+              ))
+            ) : sportsError ? (
+              // Error state with fallback data
+              fallbackSports.map((sport, index) => (
+                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                  <div
+                    className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
+                  >
+                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {sport.icon}
+                    </div>
+                    <h3 className="font-semibold mb-1">{sport.name}</h3>
+                    <p className="text-sm opacity-90">{sport.venues} venues</p>
+                  </div>
+                </Link>
+              ))
+            ) : sports.length > 0 ? (
+              // Dynamic sports data
+              sports.map((sport, index) => (
+                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                  <div
+                    className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
+                  >
+                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {sport.icon}
+                    </div>
+                    <h3 className="font-semibold mb-1">{sport.name}</h3>
+                    <p className="text-sm opacity-90">{sport.venues} venues</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              // Fallback data if no sports data
+              fallbackSports.map((sport, index) => (
+                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                  <div
+                    className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
+                  >
+                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {sport.icon}
+                    </div>
+                    <div className="font-semibold mb-1">{sport.name}</div>
+                    <p className="text-sm opacity-90">{sport.venues} venues</p>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -329,6 +365,9 @@ export default function HomePage() {
               <p className="text-gray-600 text-lg">
                 {selectedCity ? `Top-rated sports facilities in ${selectedCity}` : 'Top-rated sports facilities in your area'}
               </p>
+              {selectedCity && isLoadingVenues && (
+                <p className="text-blue-600 text-sm mt-2">Loading venues...</p>
+              )}
             </div>
             <Link
               href="/venues"
@@ -339,7 +378,23 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {venues.length > 0 ? (
+            {isLoadingVenues ? (
+              // Loading skeleton for venues
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-100">
+                  <div className="bg-gray-200 h-48 animate-pulse"></div>
+                  <div className="p-5">
+                    <div className="h-6 bg-gray-200 rounded mb-3 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-4 animate-pulse w-3/4"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+                      <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : venues.length > 0 ? (
               venues.map((venue) => (
                 <Link key={venue._id} href={`/venues/${venue._id}`} className="group">
                   <div className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">

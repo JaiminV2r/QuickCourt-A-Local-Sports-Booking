@@ -4,30 +4,23 @@ import { useState } from "react"
 import Link from "next/link"
 import { Mail, Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react"
 import { Formik, Form } from "formik"
-import * as Yup from "yup"
 import TextField from "../../../components/formik/TextField"
 import { forgotPasswordSchema } from "../../../validation/schemas"
-import { post } from "../../../services/api-client"
+import { useForgotPasswordMutation } from "../../../actions/auth"
 
 export default function ForgotPasswordPage() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
   const [emailSentTo, setEmailSentTo] = useState("")
-  const [resetDone, setResetDone] = useState(false)
 
-  const handleSubmit = async (values) => {
-    setLoading(true)
-    setError("")
+  const forgotPasswordMutation = useForgotPasswordMutation()
+
+  const handleForgotPassword = async (values) => {
     try {
-      // Simulate API call to request password reset
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setEmailSentTo(values.email)
-      setSuccess(true)
-    } catch (err) {
-      setError("Failed to send reset link. Please try again.")
-    } finally {
-      setLoading(false)
+      const response = await forgotPasswordMutation.mutateAsync({ email: values.email })
+      if (response.success) {
+        setEmailSentTo(values.email)
+      }
+    } catch (error) {
+      // Error handling is done by the mutation
     }
   }
 
@@ -44,25 +37,35 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-          {!success ? (
-            <Formik initialValues={{ email: "" }} validationSchema={forgotPasswordSchema} onSubmit={handleSubmit}>
+          {!emailSentTo ? (
+            <Formik 
+              initialValues={{ email: "" }} 
+              validationSchema={forgotPasswordSchema} 
+              onSubmit={handleForgotPassword}
+            >
               {() => (
                 <Form className="space-y-6">
-                  {error && (
+                  {forgotPasswordMutation.isError && (
                     <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                      {error}
+                      {forgotPasswordMutation.error?.response?.data?.message || "Failed to send reset link. Please try again."}
                     </div>
                   )}
 
-                  <TextField name="email" type="email" label="Email Address" leftIcon={Mail} placeholder="Enter your email" />
+                  <TextField 
+                    name="email" 
+                    type="email" 
+                    label="Email Address" 
+                    leftIcon={Mail} 
+                    placeholder="Enter your email" 
+                  />
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={forgotPasswordMutation.isPending}
                     className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    {loading ? (
+                    {forgotPasswordMutation.isPending ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin mr-2" />
                         Sending reset link...
@@ -102,66 +105,7 @@ export default function ForgotPasswordPage() {
                 {emailSentTo}
               </button>
               <p className="text-gray-500 text-sm">Please check your inbox and follow the instructions.</p>
-
-              {!resetDone ? (
-                <div className="text-left bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                  <h3 className="font-semibold text-gray-900 mb-4">Set New Password</h3>
-                  <Formik
-                    initialValues={{ email: emailSentTo, password: "", confirmPassword: "" }}
-                    validationSchema={Yup.object({
-                      email: Yup.string().email('Invalid email').required('Email is required'),
-                      password: Yup.string().min(6, 'Must be at least 6 characters').required('Password is required'),
-                      confirmPassword: Yup.string().oneOf([Yup.ref('password')], 'Passwords must match').required('Please confirm your password'),
-                    })}
-                    onSubmit={async (values, { setSubmitting, setStatus }) => {
-                      setStatus(undefined)
-                      try {
-                        await post('/api/auth/reset-password', { email: values.email, password: values.password })
-                        setResetDone(true)
-                      } catch (e) {
-                        setStatus({ error: 'Failed to reset password. Please try again.' })
-                      } finally {
-                        setSubmitting(false)
-                      }
-                    }}
-                    enableReinitialize
-                  >
-                    {({ isSubmitting, status }) => (
-                      <Form className="space-y-4">
-                        {status?.error && (
-                          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{status.error}</div>
-                        )}
-                        <TextField name="email" type="email" label="Email" leftIcon={Mail} disabled />
-                        <TextField name="password" type="password" label="New Password" placeholder="Create a new password" />
-                        <TextField name="confirmPassword" type="password" label="Confirm Password" placeholder="Re-enter your new password" />
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader2 className="w-5 h-5 animate-spin mr-2 inline" />
-                              Resetting...
-                            </>
-                          ) : (
-                            'Reset Password'
-                          )}
-                        </button>
-                      </Form>
-                    )}
-                  </Formik>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
-                    Your password has been updated successfully.
-                  </div>
-                  <Link href="/auth/login" className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                    Go to Login
-                  </Link>
-                </div>
-              )}
+              <p className="text-gray-500 text-sm">The reset link will expire in 30 minutes for security reasons.</p>
             </div>
           )}
         </div>

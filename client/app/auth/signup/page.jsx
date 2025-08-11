@@ -76,9 +76,9 @@ export default function SignupPage() {
           console.log('🔥🔥🔥🔥res.data.user🔥🔥🔥🔥🔥',res.data.user);
           // Redirect based on user role
           const userRole = res.data.user.role.role
-          if (userRole === ROLES.admin) {
+          if (userRole === 'Admin') {
             router.replace("/admin")
-          } else if (userRole === ROLES.facility_owner) {
+          } else if (userRole === 'Facility Owner') {
             router.replace("/owner")
           } else {
             router.replace("/")

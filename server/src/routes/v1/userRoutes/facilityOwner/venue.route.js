@@ -39,7 +39,7 @@ router.get(
 
 router.get(
     '/:id',
-    auth(ROLES.owner),
+    auth(ROLES.facility_owner),
     validate(venueValidation.getVenue),
     venueControllers.getVenue
 );
@@ -63,7 +63,7 @@ router.post(
  * This endpoint allows editing of venue details (including media updates).
  */
 router.put(
-    '/:id',
+    '/update/:id',
     auth(ROLES.facility_owner),
     upload.fileUpload.array('images'),
     validate(venueValidation.updateVenue),

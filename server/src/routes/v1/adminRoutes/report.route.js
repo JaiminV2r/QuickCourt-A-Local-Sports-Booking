@@ -1,23 +1,19 @@
 const express = require('express');
 const auth = require('../../../middlewares/auth');
 const { reportController } = require('../../../controllers/adminControllers');
-const validate = require('../../../middlewares/validate');
 
 const router = express.Router();
 
 // All routes require authentication and admin role
 // router.use(auth());
 
-// Get reports
+// Get all reports
 router.get('/', reportController.getAllReports);
-router.get('/stats', reportController.getReportStats);
+
+// Get specific report
 router.get('/:id', reportController.getReportById);
 
-// Create report
-router.post('/', reportController.createReport);
-
-// Update report
-router.patch('/:id/status', reportController.updateReportStatus);
+// Resolve a report
 router.post('/:id/resolve', reportController.resolveReport);
 
 module.exports = router;

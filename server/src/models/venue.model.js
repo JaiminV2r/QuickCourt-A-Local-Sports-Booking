@@ -14,6 +14,10 @@ const VenueSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        phone: {
+            type: String,
+            default: null,
+        },
         location: {
             type: { type: String, enum: ['Point'], default: 'Point' },
             coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]

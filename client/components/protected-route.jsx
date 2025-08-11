@@ -8,21 +8,28 @@ import { ROLES } from "../lib/constant"
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/")
+      return
     }
-    if (!loading && user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-      // Redirect to appropriate dashboard based on role
-      if (user.role === ROLES.admin) {
-        router.replace("/admin")
-      } else if (user?.role === ROLES.facility_owner) {
-        router.replace("/owner")
-      } else {
-        router.replace("/")
+    
+    if (!loading && user && allowedRoles.length > 0) {
+      const hasAccess = allowedRoles.includes(user.role)
+      if (!hasAccess) {
+        // Redirect to appropriate dashboard based on role
+        if (user.role === ROLES.admin) {
+          router.replace("/admin")
+        } else if (user.role === ROLES.facility_owner) {
+          router.replace("/owner")
+        } else {
+          router.replace("/")
+        }
+        return
       }
     }
-  }, [user, loading, allowedRoles])
+  }, [user, loading, allowedRoles, router])
 
   if (loading) {
     return (

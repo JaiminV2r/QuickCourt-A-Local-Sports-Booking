@@ -315,7 +315,7 @@ module.exports = {
         const resetToken = await tokenService.generateResetPasswordToken(user._id);
 
         // Create reset password link
-        const resetLink = `${process.env.FRONT_URL}/reset-password?token=${resetToken}`;
+        const resetLink = `${process.env.FRONT_URL}/auth/reset-password?token=${resetToken}`;
 
         // Send email with reset link
         const mailSent = await emailService.sendTemplateEmail({

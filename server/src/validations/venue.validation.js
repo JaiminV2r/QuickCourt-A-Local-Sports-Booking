@@ -12,6 +12,7 @@ module.exports = {
     createVenue: {
         body: Joi.object()
             .keys({
+                phone: Joi.string().trim().optional().allow('',null),
                 venue_name: Joi.string().trim().min(2).max(120).required(),
                 description: Joi.string().allow('', null),
                 address: Joi.string().trim().min(1).required(),
@@ -110,7 +111,7 @@ module.exports = {
                 .items(
                     Joi.object().keys({
                         venue_id: Joi.string().custom(objectId).required(),
-                        court_name: Joi.string().min(2).max(120).required(),
+                        court_name: Joi.array().items(Joi.string().min(2).max(120)).required(),
                         sport_type: Joi.string()
                             .valid(...SPORT_TYPE)
                             .required(),
@@ -131,12 +132,8 @@ module.exports = {
                                     time_slots: Joi.array()
                                         .items(
                                             Joi.object().keys({
-                                                start_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
-                                                end_time: Joi.string()
-                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                                    .required(),
+                                                start_time: Joi.date().required(),
+                                                end_time: Joi.date().required(),
                                                 price: Joi.number().min(0).required(),
                                             })
                                         )
@@ -156,7 +153,7 @@ module.exports = {
             court_id: Joi.string().custom(objectId).required(),
         }),
         body: Joi.object().keys({
-            court_name: Joi.string().min(2).max(120).optional(),
+            court_name: Joi.array().items(Joi.string().min(2).max(120)).optional(),
             sport_type: Joi.string()
                 .valid(...SPORT_TYPE)
                 .optional(),
@@ -177,12 +174,8 @@ module.exports = {
                         time_slots: Joi.array()
                             .items(
                                 Joi.object().keys({
-                                    start_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
-                                    end_time: Joi.string()
-                                        .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
-                                        .required(),
+                                    start_time: Joi.date().required(),
+                                    end_time: Joi.date().required(),
                                     price: Joi.number().min(0).required(),
                                 })
                             )
@@ -209,6 +202,63 @@ module.exports = {
                     'any.required': 'Status is required',
                 }),
             reason: Joi.string().trim().optional(),
+        }),
+    },
+
+    /**
+     * Admin facility operations validation schemas
+     */
+    
+    // Get facilities with filters
+    getAdminFacilities: {
+        query: Joi.object().keys({
+            page: Joi.number().integer().min(1).default(1),
+            limit: Joi.number().integer().min(1).max(100).default(10),
+            search: Joi.string().trim().allow(''),
+            status: Joi.string().valid(...Object.values(VENUE_STATUS)).optional(),
+            city: Joi.string().trim().allow(''),
+            sport: Joi.string().trim().allow('')
+        }),
+    },
+
+    // Get facility by ID
+    getFacilityById: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Approve facility
+    approveFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Reject facility
+    rejectFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+        body: Joi.object().keys({
+            reason: Joi.string().trim().min(1).required().messages({
+                'string.empty': 'Rejection reason is required',
+                'any.required': 'Rejection reason is required',
+            }),
+        }),
+    },
+
+    // Toggle facility status
+    toggleFacilityStatus: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Delete facility
+    deleteFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
         }),
     },
 };
