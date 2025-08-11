@@ -73,7 +73,7 @@ module.exports = {
                 .items(
                     Joi.object().keys({
                         venue_id: Joi.string().custom(objectId).required(),
-                        court_name: Joi.string().min(2).max(120).required(),
+                        court_name: Joi.array().items(Joi.string().min(2).max(120)).required(),
                         sport_type: Joi.string()
                             .valid(...SPORT_TYPE)
                             .required(),
@@ -115,7 +115,7 @@ module.exports = {
             court_id: Joi.string().custom(objectId).required(),
         }),
         body: Joi.object().keys({
-            court_name: Joi.string().min(2).max(120).optional(),
+            court_name: Joi.array().items(Joi.string().min(2).max(120)).optional(),
             sport_type: Joi.string()
                 .valid(...SPORT_TYPE)
                 .optional(),
