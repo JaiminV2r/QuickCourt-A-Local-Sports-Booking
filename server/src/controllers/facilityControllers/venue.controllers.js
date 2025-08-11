@@ -1,12 +1,12 @@
 // backend/src/controllers/ownerControllers/venueController.js
 const catchAsync = require('../../utils/catchAsync');
-const Venue = require('../../models/venue.model');
 const { cldUploadBuffer, cldDeleteImage, cldDeleteVideo } = require('../../utils/cloudnairy.utils');
 const { default: mongoose } = require('mongoose');
 const { venueService } = require('../../services');
 const { Court } = require('../../models');
 const { paginationQuery } = require('../../helper/mongoose.helper');
 const { VENUE_STATUS } = require('../../helper/constant.helper');
+const { str2regex } = require('../../helper/function.helper');
 
 module.exports = {
     createVenue: catchAsync(async (req, res) => {
@@ -17,6 +17,7 @@ module.exports = {
             description: req.body.description || '',
             address: req.body.address,
             city: req.body.city,
+            location: req.body.location, // { type:'Point', coordinates:[lng,lat] } optional
             sports: req.body.sports || [],
             amenities: req.body.amenities || [],
             about: req.body.about || null,
@@ -59,8 +60,9 @@ module.exports = {
     // Implementing the update function for venue update
     updateVenue: catchAsync(async (req, res) => {
         const { id } = req.params;
+
         // Find the venue by ID
-        let venue = await venueService.get({ _id: new mongoose.Types.ObjectId(id)});
+        let venue = await venueService.get(id);
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -73,6 +75,7 @@ module.exports = {
         venue.description = req.body.description || venue.description;
         venue.address = req.body.address || venue.address;
         venue.city = req.body.city || venue.city;
+        venue.location = req.body.location || venue.location;
         venue.sports = req.body.sports || venue.sports;
         venue.amenities = req.body.amenities || venue.amenities;
         venue.about = req.body.about || venue.about;
@@ -135,16 +138,24 @@ module.exports = {
     }),
 
     getAllVenues: catchAsync(async (req, res) => {
-        const { page = 1, limit = 10, search = '', venue_status } = req.query;
+        let { page = 1, limit = 10, search = '', venue_status } = req.query;
 
         let filter = {
             owner_id: new mongoose.Types.ObjectId(req.user._id),
             deleted_at: null,
-            venue_status
+            venue_status,
+            $or: [],
         };
+
         if (search) {
-            filter.venue_name = { $regex: search, $options: 'i' }; // case-insensitive search
+            search = str2regex(search);
+            filter.$or.push(
+                { venue_name: { $regex: search, $options: 'i' } },
+                { city: { $regex: search, $options: 'i' } }
+            );
         }
+
+        if (!filter.$or.length) delete filter.$or;
 
         // Pagination
         const options = {
@@ -156,7 +167,7 @@ module.exports = {
         // Fetch venues with pagination
 
         const pagination = paginationQuery(options);
-        const venuesData = await venueService.aggregate([
+        const [venuesData] = await venueService.aggregate([
             {
                 $match: filter,
             },
@@ -178,15 +189,22 @@ module.exports = {
         });
     }),
     getAllApprovedVenues: catchAsync(async (req, res) => {
-        const { page = 1, limit = 10, search = '' } = req.query;
+        let { page = 1, limit = 10, search = '' } = req.query;
 
         let filter = {
             deleted_at: null,
-            venue_status : VENUE_STATUS.APPROVED, // Only fetch approved venues     
+            venue_status: VENUE_STATUS.APPROVED, // Only fetch approved venues
+            $or: [],
         };
         if (search) {
-            filter.venue_name = { $regex: search, $options: 'i' }; // case-insensitive search
+            search = str2regex(search);
+            filter.$or.push(
+                { venue_name: { $regex: search, $options: 'i' } },
+                { city: { $regex: search, $options: 'i' } }
+            );
         }
+
+        if (!filter.$or.length) delete filter.$or;
 
         // Pagination
         const options = {
@@ -198,7 +216,7 @@ module.exports = {
         // Fetch venues with pagination
 
         const pagination = paginationQuery(options);
-        const venuesData = await venueService.aggregate([
+        const [venuesData] = await venueService.aggregate([
             {
                 $match: filter,
             },

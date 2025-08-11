@@ -14,6 +14,10 @@ const VenueSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+location: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+    },
 
     sports: [{ type: String , enum: Object.values(SPORT_TYPE), default : null}], // slugs
     amenities: [{
@@ -37,6 +41,9 @@ const VenueSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(VENUE_STATUS),
       default: VENUE_STATUS.PENDING,
+        reason: {
+            type: String,
+        },
     },
     // soft activity flag
     is_active: { type: Boolean, default: true, index: true },
