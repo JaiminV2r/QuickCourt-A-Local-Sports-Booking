@@ -1,15 +1,18 @@
 // backend/src/controllers/ownerControllers/venueController.js
 const catchAsync = require('../../utils/catchAsync');
-const { cldUploadBuffer, cldDeleteImage, cldDeleteVideo } = require('../../utils/cloudnairy.utils');
 const { default: mongoose } = require('mongoose');
-const { venueService } = require('../../services');
+const { venueService, fileService } = require('../../services');
 const { Court } = require('../../models');
 const { paginationQuery } = require('../../helper/mongoose.helper');
-const { VENUE_STATUS } = require('../../helper/constant.helper');
+const { VENUE_STATUS, FILES_FOLDER } = require('../../helper/constant.helper');
 const { str2regex } = require('../../helper/function.helper');
+const config = require('../../config/config');
+const path = require('path');
 
 module.exports = {
     createVenue: catchAsync(async (req, res) => {
+        const { files } = req;
+
         // 1) Build payload (no media in body)
         const payload = {
             owner_id: new mongoose.Types.ObjectId(req.user._id), // facility owner
@@ -24,31 +27,16 @@ module.exports = {
             // optional: venue_status stays default (PENDING)
         };
 
-        const venue = await venueService.create(payload);
-        // Ensure arrays exist
-        if (!Array.isArray(venue.photos)) venue.photos = [];
-        if (!Array.isArray(venue.videos)) venue.videos = [];
-
-        // 2) images[] (multipart)
-        const imageFiles = (req.files && req.files.images) || [];
-        for (const f of imageFiles) {
-            if (!f.mimetype.startsWith('image/')) continue;
-            const r = await cldUploadBuffer(f.buffer, { type: 'venue', resource_type: 'image' });
-            venue.photos.push(r.public_id.split('/').pop());
-        }
-
-        // 3) videos[] (multipart)
-        const videoFiles = (req.files && req.files.videos) || [];
-        for (const f of videoFiles) {
-            if (!f.mimetype.startsWith('video/')) continue;
-            const r = await cldUploadBuffer(f.buffer, {
-                type: 'venue_video',
-                resource_type: 'video',
+        if (files.length) {
+            const { name } = await fileService.saveFile({
+                file: files,
+                folderName: FILES_FOLDER.venueImages,
             });
-            venue.videos.push(r.public_id.split('/').pop());
+
+            payload.images = name;
         }
 
-        await venue.save();
+        const venue = await venueService.create(payload);
 
         return res.status(201).json({
             success: true,
@@ -59,10 +47,14 @@ module.exports = {
 
     // Implementing the update function for venue update
     updateVenue: catchAsync(async (req, res) => {
-        const { id } = req.params;
+        const {
+            body: { remove_images, ...body },
+            params: { id },
+            files,
+        } = req;
 
         // Find the venue by ID
-        let venue = await venueService.get(id);
+        let venue = await venueService.get({ _id: id });
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -83,49 +75,31 @@ module.exports = {
         venue.starting_price_per_hour =
             req.body.starting_price_per_hour || venue.starting_price_per_hour;
 
-        // 2) Handle images - Adding new images or updating old ones
-        const imageFiles = (req.files && req.files.images) || [];
-        if (imageFiles.length > 0) {
-            // Remove old images if new ones are being uploaded
-            if (venue.photos && venue.photos.length > 0) {
-                for (const photo of venue.photos) {
-                    await cldDeleteImage(photo); // Assuming cldDeleteImage is a function to delete old images
-                }
-            }
+        if (remove_images?.length) {
+            fileService.deleteFiles(
+                remove_images.map((image) =>
+                    path.join(
+                        __dirname,
+                        `../../../${FILES_FOLDER.public}/${FILES_FOLDER.venueImages}/${image}`
+                    )
+                )
+            );
 
-            // Upload new images and push to photos array
-            venue.photos = [];
-            for (const f of imageFiles) {
-                if (!f.mimetype.startsWith('image/')) continue;
-                const r = await cldUploadBuffer(f.buffer, {
-                    type: 'venue',
-                    resource_type: 'image',
-                });
-                venue.photos.push(r.public_id.split('/').pop());
-            }
+            body.images = venue.images.filter((image) => !remove_images.includes(image));
         }
 
-        // 3) Handle videos - Adding new videos
-        const videoFiles = (req.files && req.files.videos) || [];
-        if (videoFiles.length > 0) {
-            // Remove old videos if new ones are uploaded
-            if (venue.videos && venue.videos.length > 0) {
-                for (const video of venue.videos) {
-                    await cldDeleteVideo(video); // Assuming cldDeleteVideo is a function to delete old videos
-                }
-            }
+        if (files.length) {
+            const { name } = await fileService.saveFile({
+                file: files,
+                folderName: FILES_FOLDER.venueImages,
+            });
 
-            // Upload new videos and push to videos array
-            venue.videos = [];
-            for (const f of videoFiles) {
-                if (!f.mimetype.startsWith('video/')) continue;
-                const r = await cldUploadBuffer(f.buffer, {
-                    type: 'venue_video',
-                    resource_type: 'video',
-                });
-                venue.videos.push(r.public_id.split('/').pop());
-            }
+            body.images = remove_images?.length
+                ? [...body.images, ...name]
+                : [...venue.images, ...name];
         }
+
+        Object.assign(venue, body);
 
         // Save the updated venue
         await venue.save();
@@ -143,9 +117,12 @@ module.exports = {
         let filter = {
             owner_id: new mongoose.Types.ObjectId(req.user._id),
             deleted_at: null,
-            venue_status,
             $or: [],
         };
+
+        if (venue_status) {
+            filter.venue_status = venue_status;
+        }
 
         if (search) {
             search = str2regex(search);
@@ -166,11 +143,7 @@ module.exports = {
 
         // Fetch venues with pagination
 
-        const pagination = paginationQuery(options);
-        const [venuesData] = await venueService.aggregate([
-            {
-                $match: filter,
-            },
+        const pagination = paginationQuery(options, [
             {
                 $lookup: {
                     from: 'courts',
@@ -178,6 +151,27 @@ module.exports = {
                     foreignField: 'venue_id',
                     as: 'courts',
                 },
+            },
+            {
+                $addFields: {
+                    images: {
+                        $map: {
+                            input: '$images',
+                            as: 'image',
+                            in: {
+                                $concat: [
+                                    `${config.base_url}/${FILES_FOLDER.venueImages}/`,
+                                    '$$image',
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        const [venuesData] = await venueService.aggregate([
+            {
+                $match: filter,
             },
             ...pagination,
         ]);
@@ -268,18 +262,15 @@ module.exports = {
             });
         }
 
-        // Delete images from Cloudinary
-        if (venue.photos && venue.photos.length > 0) {
-            for (const photo of venue.photos) {
-                await cldDeleteImage(photo);
-            }
-        }
-
-        // Delete videos from Cloudinary
-        if (venue.videos && venue.videos.length > 0) {
-            for (const video of venue.videos) {
-                await cldDeleteVideo(video);
-            }
+        if (venue?.images?.length) {
+            fileService.deleteFiles(
+                venue?.images.map((image) =>
+                    path.join(
+                        __dirname,
+                        `../../../${FILES_FOLDER.public}/${FILES_FOLDER.venueImages}/${image}`
+                    )
+                )
+            );
         }
 
         // Delete venue from database

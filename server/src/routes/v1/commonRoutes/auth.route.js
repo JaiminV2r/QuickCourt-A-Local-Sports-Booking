@@ -4,13 +4,19 @@ const validate = require('../../../middlewares/validate');
 const { authValidation } = require('../../../validations');
 const { auth } = require('../../../middlewares/auth');
 const { ROLES } = require('../../../helper/constant.helper');
+const { fileUpload } = require('../../../middlewares/upload');
 
 const router = express.Router();
 
 /**
  * Register.
  */
-router.post('/register', validate(authValidation.register), authController.register);
+router.post(
+    '/register',
+    fileUpload.single('avatar'),
+    validate(authValidation.register),
+    authController.register
+);
 
 /**
  * Verify OTP.
@@ -56,17 +62,18 @@ router.put('/reset-password', validate(authValidation.resetPassword), authContro
  */
 router.put(
     '/change-password',
-    auth(ROLES.player, ROLES.admin , ROLES.facility_owner),
+    auth(ROLES.player, ROLES.admin, ROLES.facility_owner),
     validate(authValidation.changePassword),
     authController.changePassword
 );
 
 router.put(
     '/update',
-    auth(ROLES.player,ROLES.admin , ROLES.facility_owner),
+    fileUpload.single('avatar'),
+    auth(ROLES.player, ROLES.admin, ROLES.facility_owner),
     validate(authValidation.updateUser),
     authController.update
-)
+);
 
 /**
  * Get roles list (excluding Admin).

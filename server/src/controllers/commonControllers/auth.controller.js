@@ -5,11 +5,14 @@ const {
     emailService,
     roleService,
     otpService,
+    fileService,
 } = require('../../services');
 const ApiError = require('../../utils/apiError');
 const catchAsync = require('../../utils/catchAsync');
 const bcrypt = require('bcryptjs');
 const { TOKEN_TYPES, ROLES, FILES_FOLDER } = require('../../helper/constant.helper');
+const path = require('path');
+
 /**
  * All user controllers are exported from here 👇
  */
@@ -18,7 +21,7 @@ module.exports = {
      * POST: Register.
      */
     register: catchAsync(async (req, res) => {
-        const { body } = req;
+        const { body, file } = req;
         const emailExist = await userService.get({
             email: body.email,
             role: body.role,
@@ -26,6 +29,15 @@ module.exports = {
         }); // Get user by email.
         if (emailExist) {
             throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken with this role'); // If email already exist, throw an error.
+        }
+
+        if (file) {
+            const { name } = await fileService.saveFile({
+                file: file,
+                folderName: FILES_FOLDER.userImages,
+            });
+
+            body.avatar = name;
         }
 
         const user = await userService.create({ ...body }); // User create.
@@ -371,7 +383,25 @@ module.exports = {
     }),
 
     update: catchAsync(async (req, res) => {
-        const { user, body } = req;
+        const { user, body, file } = req;
+
+        if (file) {
+            const { name } = await fileService.saveFile({
+                file: file,
+                folderName: FILES_FOLDER.userImages,
+            });
+
+            body.avatar = name;
+
+            if (user.avatar) {
+                fileService.deleteFile(
+                    path.join(
+                        __dirname,
+                        `../../${FILES_FOLDER.public}/${FILES_FOLDER.userImages}/${user.avatar}`
+                    )
+                );
+            }
+        }
 
         // Update user information
         await userService.update({ _id: user._id }, { $set: body });
@@ -381,5 +411,4 @@ module.exports = {
             message: 'User information updated successfully',
         });
     }),
-
 };

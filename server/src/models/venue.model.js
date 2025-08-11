@@ -1,54 +1,57 @@
 // backend/src/models/venue.model.js
 const mongoose = require('mongoose');
-const { VENUE_STATUS, SPORT_TYPE, AMENITIES } = require('../helper/constant.helper');
-const { urlFromName } = require('../utils/cloudnairy.utils');
+const { VENUE_STATUS, SPORT_TYPE, FILES_FOLDER } = require('../helper/constant.helper');
 
-const { toJSON,paginate } = require('./plugins')
+const { toJSON, paginate } = require('./plugins');
+const config = require('../config/config');
 const VenueSchema = new mongoose.Schema(
-  {
-    owner_id: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
-   venue_name: { type: String, required: true, trim: true },
-    description: String,
-    address: { type: String,required: true },
-    city: {
-      type: String,
-      required: true,
-    },
-location: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
-    },
-
-    sports: [{ type: String , enum: Object.values(SPORT_TYPE), default : null}], // slugs
-    amenities: [{
-      type: String,
-      default: null
-    }],
-
-    // store ONLY image names; URLs are computed at response time
-    photos: [String],
-    video: { type: String, default: null },
-  
-    about:  [{ type: String, default: null }],
-
-    // ratings for venue cards & detail
-    rating: {
-      avg: { type: Number, default: 0 },
-      count: { type: Number, default: 0 },
-    },
-
-    venue_status:{
-      type: String,
-      enum: Object.values(VENUE_STATUS),
-      default: VENUE_STATUS.PENDING,
-        reason: {
+    {
+        owner_id: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
+        venue_name: { type: String, required: true, trim: true },
+        description: String,
+        address: { type: String, required: true },
+        city: {
             type: String,
+            required: true,
         },
+        location: {
+            type: { type: String, enum: ['Point'], default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+        },
+
+        sports: [{ type: String, enum: Object.values(SPORT_TYPE), default: null }], // slugs
+        amenities: [
+            {
+                type: String,
+                default: null,
+            },
+        ],
+
+        // store ONLY image names; URLs are computed at response time
+        images: [String],
+        video: { type: String, default: null },
+
+        about: [{ type: String, default: null }],
+
+        // ratings for venue cards & detail
+        rating: {
+            avg: { type: Number, default: 0 },
+            count: { type: Number, default: 0 },
+        },
+
+        venue_status: {
+            type: String,
+            enum: Object.values(VENUE_STATUS),
+            default: VENUE_STATUS.PENDING,
+            reason: {
+                type: String,
+            },
+        },
+        // soft activity flag
+        is_active: { type: Boolean, default: true, index: true },
+        deleted_at: { type: Date, default: null },
     },
-    // soft activity flag
-    is_active: { type: Boolean, default: true, index: true },
-  },
-  { timestamps: true }
+    { timestamps: true }
 );
 
 VenueSchema.plugin(paginate);
@@ -56,12 +59,12 @@ VenueSchema.plugin(toJSON);
 
 // Add Cloudinary URLs at response time without storing them
 VenueSchema.set('toJSON', {
-  transform: (_, ret) => {
-    ret.photoUrls = (ret.photos || []).map((name) =>
-      urlFromName('venue', name, { w: 1600, h: 900 })
-    );
-    return ret;
-  },
+    transform: (_, ret) => {
+        ret.images = (ret.images || []).map(
+            (name) => `${config.base_url}/${FILES_FOLDER.venueImages}/${name}`
+        );
+        return ret;
+    },
 });
 
 module.exports = mongoose.models.Venue || mongoose.model('Venue', VenueSchema);
