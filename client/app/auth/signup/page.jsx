@@ -4,6 +4,9 @@ import { useState } from "react"
 import { useAuth } from "../../../contexts/auth-context"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
+import { Formik, Form } from "formik"
+import TextField from "../../../components/formik/TextField"
+import { signupSchema } from "../../../validation/schemas"
 
 export default function SignupPage() {
   const [step, setStep] = useState(1) // 1: Form, 2: OTP
@@ -45,27 +48,12 @@ export default function SignupPage() {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (values) => {
     setLoading(true)
     setError("")
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      setLoading(false)
-      return
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
-      setLoading(false)
-      return
-    }
-
     try {
-      // Simulate sending OTP
       await new Promise((resolve) => setTimeout(resolve, 1000))
+      setFormData(values)
       setStep(2)
     } catch (err) {
       setError("Failed to send OTP. Please try again.")
@@ -136,174 +124,122 @@ export default function SignupPage() {
         {/* Form */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
           {step === 1 ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                  {error}
-                </div>
-              )}
+            <Formik initialValues={formData} validationSchema={signupSchema} onSubmit={handleSubmit} enableReinitialize>
+              {({ values, setFieldValue }) => (
+                <Form className="space-y-6">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      {error}
+                    </div>
+                  )}
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Full Name</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
+                  <TextField name="name" type="text" label="Full Name" leftIcon={User} placeholder="Enter your full name" />
+                  <TextField name="email" type="email" label="Email Address" leftIcon={Mail} placeholder="Enter your email" />
+                  <TextField name="phone" type="text" label="Phone" leftIcon={Phone} placeholder="Enter phone number" />
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">Account Type</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFieldValue('role', 'player')}
+                        className={`p-4 border-2 rounded-xl text-left transition-all ${
+                          values.role === "player"
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="font-semibold">Player</div>
+                        <div className="text-sm text-gray-600">Book and play sports</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFieldValue('role', 'owner')}
+                        className={`p-4 border-2 rounded-xl text-left transition-all ${
+                          values.role === "owner"
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="font-semibold">Owner</div>
+                        <div className="text-sm text-gray-600">Manage facilities</div>
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Email Address</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Account Type</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, role: "player" }))}
-                    className={`p-4 border-2 rounded-xl text-left transition-all ${
-                      formData.role === "player"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="font-semibold">Player</div>
-                    <div className="text-sm text-gray-600">Book and play sports</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, role: "owner" }))}
-                    className={`p-4 border-2 rounded-xl text-left transition-all ${
-                      formData.role === "owner"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="font-semibold">Owner</div>
-                    <div className="text-sm text-gray-600">Manage facilities</div>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
+                  <TextField
                     name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                    type={showPassword ? "text" : "password"}
+                    label="Password"
+                    leftIcon={Lock}
                     placeholder="Create a password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    rightIcon={(
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        )}
+                      </button>
                     )}
-                  </button>
-                </div>
-              </div>
+                  />
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Confirm Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
+                  <TextField
                     name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                    type={showConfirmPassword ? "text" : "password"}
+                    label="Confirm Password"
+                    leftIcon={Lock}
                     placeholder="Confirm your password"
-                    required
+                    rightIcon={(
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        )}
+                      </button>
+                    )}
                   />
+
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                      required
+                    />
+                    <span className="ml-3 text-sm text-gray-600">
+                      I agree to the{" "}
+                      <Link href="/terms" className="text-blue-600 hover:text-blue-700 font-medium">
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="/privacy" className="text-blue-600 hover:text-blue-700 font-medium">
+                        Privacy Policy
+                      </Link>
+                    </span>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        Sending OTP...
+                      </>
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      <>
+                        Continue
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
                     )}
                   </button>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-                  required
-                />
-                <span className="ml-3 text-sm text-gray-600">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-blue-600 hover:text-blue-700 font-medium">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-blue-600 hover:text-blue-700 font-medium">
-                    Privacy Policy
-                  </Link>
-                </span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
-              </button>
-            </form>
+                </Form>
+              )}
+            </Formik>
           ) : (
             <form onSubmit={handleOTPSubmit} className="space-y-6">
               {error && (
