@@ -62,7 +62,7 @@ module.exports = {
         const { id } = req.params;
 
         // Find the venue by ID
-        let venue = await venueService.get(id);
+        let venue = await venueService.get({_id:id});
         if (!venue) {
             return res.status(404).json({
                 success: false,

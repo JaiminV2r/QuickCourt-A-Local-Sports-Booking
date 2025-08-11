@@ -69,7 +69,7 @@
  * This endpoint allows editing of venue details (including media updates).
  */
 router.put(
-  '/:id',
+  '/update/:id',
   auth(ROLES.facility_owner),
   upload.fileUpload.fields([
     { name: 'images', maxCount: 8 },
