@@ -113,6 +113,165 @@ export const mockDb = {
     { id: 201, type: 'facility', entityId: 4, message: 'Court surface damaged', status: 'open', createdAt: '2024-01-14' },
     { id: 202, type: 'user', entityId: 4, message: 'Abusive behavior reported', status: 'open', createdAt: '2024-01-15' },
   ],
+  // Public facing facilities dataset with richer details used by user flows
+  publicFacilities: [
+    {
+      id: 1,
+      name: 'SportZone Arena',
+      description:
+        'Premium sports facility with modern amenities and professional-grade courts. Perfect for both casual games and competitive matches.',
+      address: '123 Sports Street, Koramangala, Bangalore - 560034',
+      location: 'Koramangala, Bangalore',
+      rating: 4.8,
+      totalReviews: 156,
+      phone: '+91 9876543210',
+      email: 'info@sportzonearena.com',
+      sports: [
+        {
+          name: 'Badminton',
+          courts: [
+            { id: 'B1', name: 'Badminton Court 1', price: 500, peakPrice: 600 },
+            { id: 'B2', name: 'Badminton Court 2', price: 500, peakPrice: 600 },
+            { id: 'B3', name: 'Badminton Court 3', price: 600, peakPrice: 700 },
+          ],
+        },
+        {
+          name: 'Tennis',
+          courts: [
+            { id: 'T1', name: 'Tennis Court 1', price: 800, peakPrice: 1000 },
+            { id: 'T2', name: 'Tennis Court 2', price: 800, peakPrice: 1000 },
+          ],
+        },
+      ],
+      amenities: ['Parking', 'WiFi', 'Cafeteria', 'Changing Room', 'Equipment Rental', 'Air Conditioning'],
+      images: ['/placeholder-qdhsv.png', '/indoor-badminton-court.png', '/tennis-court-professional.png', '/sports-facility-reception.png', '/modern-changing-room.png'],
+      gallery: [
+        { type: 'image', url: '/vibrant-sports-arena.png', caption: 'Main Arena' },
+        { type: 'image', url: '/indoor-badminton-court.png', caption: 'Badminton Courts' },
+        { type: 'image', url: '/tennis-court-professional.png', caption: 'Tennis Courts' },
+      ],
+      operatingHours: { weekdays: '6:00 AM - 11:00 PM', weekends: '6:00 AM - 12:00 AM' },
+      rules: ['Sports shoes are mandatory', 'No outside food or drinks allowed', 'Advance booking required', 'Cancellation allowed up to 2 hours before'],
+      reviews: [
+        { id: 1, user: 'Rajesh Kumar', rating: 5, comment: 'Excellent facility with well-maintained courts.', date: '2024-01-15', avatar: 'RK' },
+        { id: 2, user: 'Priya Sharma', rating: 4, comment: 'Good courts and amenities.', date: '2024-01-10', avatar: 'PS' },
+      ],
+      card: {
+        price: 500,
+        image: '/vibrant-sports-arena.png',
+        distance: '2.3 km',
+        nextSlot: '6:00 PM',
+        isOpen: true,
+      },
+    },
+    {
+      id: 2,
+      name: 'Elite Sports Club',
+      description: 'Professional grade courts with excellent facilities',
+      address: '45 MG Road, Indiranagar, Bangalore - 560038',
+      location: 'Indiranagar, Bangalore',
+      rating: 4.6,
+      totalReviews: 89,
+      phone: '+91 9876543211',
+      email: 'contact@elitesportsclub.com',
+      sports: [
+        {
+          name: 'Football',
+          courts: [
+            { id: 'F1', name: 'Football Ground 1', price: 1000, peakPrice: 1200 },
+          ],
+        },
+        {
+          name: 'Basketball',
+          courts: [
+            { id: 'BB1', name: 'Basketball Court 1', price: 800, peakPrice: 1000 },
+          ],
+        },
+      ],
+      amenities: ['AC', 'Parking', 'Cafeteria', 'Locker'],
+      images: ['/vibrant-sports-club.png'],
+      gallery: [],
+      operatingHours: { weekdays: '6:00 AM - 11:00 PM', weekends: '6:00 AM - 12:00 AM' },
+      rules: ['Proper attire required'],
+      reviews: [],
+      card: { price: 800, image: '/vibrant-sports-club.png', distance: '3.1 km', nextSlot: '7:00 PM', isOpen: true },
+    },
+    {
+      id: 3,
+      name: 'Champions Court',
+      description: 'Affordable courts with quality equipment',
+      address: '22 Sports Avenue, Whitefield, Bangalore - 560066',
+      location: 'Whitefield, Bangalore',
+      rating: 4.7,
+      totalReviews: 203,
+      phone: '+91 9876543212',
+      email: 'hello@championscourt.com',
+      sports: [
+        {
+          name: 'Badminton',
+          courts: [
+            { id: 'B1', name: 'Badminton Court 1', price: 400, peakPrice: 500 },
+            { id: 'B2', name: 'Badminton Court 2', price: 450, peakPrice: 550 },
+          ],
+        },
+        { name: 'Table Tennis', courts: [{ id: 'TT1', name: 'Table Tennis Table 1', price: 300, peakPrice: 400 }] },
+      ],
+      amenities: ['Parking', 'Equipment Rental', 'Water'],
+      images: ['/badminton-court.png'],
+      gallery: [],
+      operatingHours: { weekdays: '6:00 AM - 11:00 PM', weekends: '6:00 AM - 12:00 AM' },
+      rules: [],
+      reviews: [],
+      card: { price: 400, image: '/badminton-court.png', distance: '5.2 km', nextSlot: '8:00 PM', isOpen: true },
+    },
+    {
+      id: 4,
+      name: 'Victory Grounds',
+      description: 'Large outdoor grounds with floodlight facilities',
+      address: '9 Victory Road, HSR Layout, Bangalore - 560102',
+      location: 'HSR Layout, Bangalore',
+      rating: 4.5,
+      totalReviews: 67,
+      phone: '+91 9876543213',
+      email: 'team@victorygrounds.com',
+      sports: [
+        { name: 'Cricket', courts: [{ id: 'C1', name: 'Cricket Ground A', price: 1200, peakPrice: 1400 }] },
+        { name: 'Football', courts: [{ id: 'F1', name: 'Football Ground A', price: 900, peakPrice: 1100 }] },
+      ],
+      amenities: ['Floodlights', 'Parking', 'Changing Room', 'Cafeteria'],
+      images: ['/cricket-ground.png'],
+      gallery: [],
+      operatingHours: { weekdays: '6:00 AM - 11:00 PM', weekends: '6:00 AM - 12:00 AM' },
+      rules: [],
+      reviews: [],
+      card: { price: 900, image: '/cricket-ground.png', distance: '4.8 km', nextSlot: '9:00 PM', isOpen: false },
+    },
+  ],
+  // Bookings keyed by user id
+  bookingsByUser: {
+    // seeded with some example bookings for user id 3
+    3: [
+      {
+        id: 1001,
+        bookingId: 'QC001234',
+        venueId: 1,
+        venueName: 'SportZone Arena',
+        venueImage: '/vibrant-sports-arena.png',
+        sportType: 'Badminton',
+        courtId: 'B1',
+        courtName: 'Badminton Court 1',
+        date: '2024-01-25',
+        time: '18:00 - 19:00',
+        status: 'Confirmed',
+        amount: 500,
+        location: 'Koramangala, Bangalore',
+        players: 4,
+        venuePhone: '+91 9876543210',
+        canCancel: true,
+        canReschedule: true,
+      },
+    ],
+  },
 }
 
 

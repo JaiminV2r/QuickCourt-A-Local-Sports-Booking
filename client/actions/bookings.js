@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { get, post } from '../services/api-client'
+import { get, post, del } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
@@ -16,6 +16,16 @@ export function useCreateBookingMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload) => post(endpoints.bookings.create, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all })
+    },
+  })
+}
+
+export function useCancelBookingMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (bookingId) => del(endpoints.bookings.byId(bookingId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all })
     },

@@ -31,13 +31,13 @@ export const endpoints = {
     },
   },
   facilities: {
-    list: '/facilities',
-    byId: (id) => `/facilities/${id}`,
+    list: '/api/facilities',
+    byId: (id) => `/api/facilities/${id}`,
   },
   bookings: {
-    list: '/bookings',
-    create: '/bookings',
-    byId: (id) => `/bookings/${id}`,
+    list: '/api/bookings',
+    create: '/api/bookings',
+    byId: (id) => `/api/bookings/${id}`,
   },
 }
 

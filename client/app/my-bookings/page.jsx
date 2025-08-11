@@ -1,85 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Calendar, Clock, MapPin, Filter, Star, Phone } from "lucide-react"
+import { useBookingsQuery, useCancelBookingMutation } from "../../actions/bookings"
+import ProtectedRoute from "../../components/protected-route"
 
 export default function MyBookingsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
-
-  const bookings = [
-    {
-      id: 1,
-      bookingId: "QC001234",
-      venueName: "SportZone Arena",
-      venueImage: "/vibrant-sports-arena.png",
-      sportType: "Badminton",
-      courtName: "Badminton Court 1",
-      date: "2024-01-25",
-      time: "18:00 - 19:00",
-      status: "Confirmed",
-      amount: 500,
-      location: "Koramangala, Bangalore",
-      players: 4,
-      venuePhone: "+91 9876543210",
-      canCancel: true,
-      canReschedule: true,
-    },
-    {
-      id: 2,
-      bookingId: "QC001235",
-      venueName: "Elite Sports Club",
-      venueImage: "/vibrant-sports-club.png",
-      sportType: "Tennis",
-      courtName: "Tennis Court 2",
-      date: "2024-01-18",
-      time: "16:00 - 17:00",
-      status: "Completed",
-      amount: 800,
-      location: "Indiranagar, Bangalore",
-      players: 2,
-      venuePhone: "+91 9876543211",
-      canCancel: false,
-      canReschedule: false,
-      canReview: true,
-      rating: null,
-    },
-    {
-      id: 3,
-      bookingId: "QC001236",
-      venueName: "Champions Court",
-      venueImage: "/badminton-court.png",
-      sportType: "Badminton",
-      courtName: "Badminton Court 3",
-      date: "2024-01-28",
-      time: "19:00 - 20:00",
-      status: "Confirmed",
-      amount: 600,
-      location: "Whitefield, Bangalore",
-      players: 4,
-      venuePhone: "+91 9876543212",
-      canCancel: true,
-      canReschedule: true,
-    },
-    {
-      id: 4,
-      bookingId: "QC001237",
-      venueName: "Victory Grounds",
-      venueImage: "/cricket-ground.png",
-      sportType: "Football",
-      courtName: "Football Ground A",
-      date: "2024-01-15",
-      time: "20:00 - 21:00",
-      status: "Cancelled",
-      amount: 1200,
-      location: "HSR Layout, Bangalore",
-      players: 10,
-      venuePhone: "+91 9876543213",
-      canCancel: false,
-      canReschedule: false,
-      refundAmount: 1080,
-    },
-  ]
+  const { data, isLoading } = useBookingsQuery()
+  const { mutateAsync: cancelBooking } = useCancelBookingMutation()
+  const bookings = data?.items ?? []
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -94,7 +25,7 @@ export default function MyBookingsPage() {
     }
   }
 
-  const filteredBookings = bookings.filter((booking) => {
+  const filteredBookings = (bookings).filter((booking) => {
     if (activeTab === "upcoming") {
       return booking.status === "Confirmed" && new Date(booking.date) >= new Date()
     }
@@ -107,9 +38,12 @@ export default function MyBookingsPage() {
     return true
   })
 
-  const handleCancelBooking = (bookingId) => {
-    if (confirm("Are you sure you want to cancel this booking? Cancellation charges may apply.")) {
-      alert(`Booking ${bookingId} has been cancelled. Refund will be processed within 3-5 business days.`)
+  const handleCancelBooking = async (bookingId) => {
+    if (!confirm("Are you sure you want to cancel this booking? Cancellation charges may apply.")) return
+    try {
+      await cancelBooking(bookingId)
+    } catch (e) {
+      alert('Failed to cancel booking')
     }
   }
 
@@ -126,7 +60,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <>
+    <ProtectedRoute allowedRoles={["player", "owner", "admin"]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
@@ -212,7 +146,9 @@ export default function MyBookingsPage() {
 
           {/* Bookings List */}
           <div className="space-y-4 md:space-y-6">
-            {filteredBookings.length === 0 ? (
+            {isLoading ? (
+              <div className="bg-white rounded-2xl shadow-sm border p-8 md:p-12 text-center">Loading...</div>
+            ) : filteredBookings.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border p-8 md:p-12 text-center">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
@@ -331,6 +267,6 @@ export default function MyBookingsPage() {
             )}
           </div>
         </div>
-    </>
+    </ProtectedRoute>
   )
 }

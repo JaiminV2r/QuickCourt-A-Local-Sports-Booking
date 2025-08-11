@@ -1,105 +1,20 @@
 "use client"
 
-import { useState } from "react"
-import {
-  MapPin,
-  Star,
-  Clock,
-  Users,
-  Wifi,
-  Car,
-  Coffee,
-  Dumbbell,
-  ChevronLeft,
-  ChevronRight,
-  Phone,
-  Mail,
-  Share2,
-  Heart,
-} from "lucide-react"
+import { useEffect, useState } from "react"
+import { MapPin, Star, ChevronLeft, ChevronRight, Phone, Mail, Share2, Heart } from "lucide-react"
 import Link from "next/link"
+import { useFacilityQuery } from "../../../actions/facilities"
 
 export default function SingleVenuePage({ params }) {
   const [activeTab, setActiveTab] = useState("overview")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
+  const id = Number(params?.id)
+  const { data: venue, isLoading } = useFacilityQuery(id)
 
-  // Mock venue data
-  const venue = {
-    id: params?.id || 1,
-    name: "SportZone Arena",
-    description:
-      "Premium sports facility with modern amenities and professional-grade courts. Perfect for both casual games and competitive matches. Our facility features state-of-the-art equipment and well-maintained courts.",
-    address: "123 Sports Street, Koramangala, Bangalore - 560034",
-    location: "Koramangala, Bangalore",
-    rating: 4.8,
-    totalReviews: 156,
-    phone: "+91 9876543210",
-    email: "info@sportzonearena.com",
-    sports: [
-      { name: "Badminton", courts: 6, price: 500, peakPrice: 600 },
-      { name: "Tennis", courts: 4, price: 800, peakPrice: 1000 },
-    ],
-    amenities: [
-      { name: "Parking", icon: Car, available: true },
-      { name: "WiFi", icon: Wifi, available: true },
-      { name: "Cafeteria", icon: Coffee, available: true },
-      { name: "Changing Room", icon: Users, available: true },
-      { name: "Equipment Rental", icon: Dumbbell, available: true },
-      { name: "Air Conditioning", icon: Clock, available: true },
-    ],
-    images: [
-      "/placeholder-qdhsv.png",
-      "/indoor-badminton-court.png",
-      "/tennis-court-professional.png",
-      "/sports-facility-reception.png",
-      "/modern-changing-room.png",
-    ],
-    operatingHours: {
-      weekdays: "6:00 AM - 11:00 PM",
-      weekends: "6:00 AM - 12:00 AM",
-    },
-    rules: [
-      "Sports shoes are mandatory",
-      "No outside food or drinks allowed",
-      "Advance booking required",
-      "Cancellation allowed up to 2 hours before",
-      "Maximum 4 players per court for badminton",
-    ],
-    reviews: [
-      {
-        id: 1,
-        user: "Rajesh Kumar",
-        rating: 5,
-        comment: "Excellent facility with well-maintained courts. Staff is very helpful and professional.",
-        date: "2024-01-15",
-        avatar: "RK",
-      },
-      {
-        id: 2,
-        user: "Priya Sharma",
-        rating: 4,
-        comment: "Good courts and amenities. Parking can be a bit crowded during peak hours.",
-        date: "2024-01-10",
-        avatar: "PS",
-      },
-      {
-        id: 3,
-        user: "Amit Patel",
-        rating: 5,
-        comment: "Best badminton courts in the area. Highly recommended for serious players!",
-        date: "2024-01-08",
-        avatar: "AP",
-      },
-    ],
-    gallery: [
-      { type: "image", url: "/vibrant-sports-arena.png", caption: "Main Arena" },
-      { type: "image", url: "/indoor-badminton-court.png", caption: "Badminton Courts" },
-      { type: "image", url: "/tennis-court-professional.png", caption: "Tennis Courts" },
-      { type: "image", url: "/sports-facility-reception.png", caption: "Reception Area" },
-      { type: "image", url: "/modern-changing-room.png", caption: "Changing Rooms" },
-    ],
-  }
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [id])
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -111,10 +26,12 @@ export default function SingleVenuePage({ params }) {
   ]
 
   const nextImage = () => {
+    if (!venue?.images?.length) return
     setCurrentImageIndex((prev) => (prev + 1) % venue.images.length)
   }
 
   const prevImage = () => {
+    if (!venue?.images?.length) return
     setCurrentImageIndex((prev) => (prev - 1 + venue.images.length) % venue.images.length)
   }
 
@@ -129,6 +46,14 @@ export default function SingleVenuePage({ params }) {
       navigator.clipboard.writeText(window.location.href)
       alert("Link copied to clipboard!")
     }
+  }
+
+  if (isLoading || !venue) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-gray-600">Loading venue...</div>
+      </div>
+    )
   }
 
   return (
@@ -224,7 +149,7 @@ export default function SingleVenuePage({ params }) {
                 <ChevronRight className="w-6 h-6" />
               </button>
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                {venue.images.map((_, index) => (
+                 {(venue.images || []).map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
@@ -286,16 +211,20 @@ export default function SingleVenuePage({ params }) {
 
                   <div>
                     <h3 className="text-lg md:text-xl font-semibold mb-4">Quick Info</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="bg-blue-50 p-4 md:p-6 rounded-2xl text-center">
                         <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
-                          {venue.sports.reduce((total, sport) => total + sport.courts, 0)}
+                          {venue.sports.reduce((total, sport) => total + (Array.isArray(sport.courts) ? sport.courts.length : Number(sport.courts) || 0), 0)}
                         </div>
                         <div className="text-sm text-gray-600">Total Courts</div>
                       </div>
                       <div className="bg-green-50 p-4 md:p-6 rounded-2xl text-center">
                         <div className="text-2xl md:text-3xl font-bold text-green-600 mb-1">
-                          ₹{Math.min(...venue.sports.map((s) => s.price))}+
+                          ₹{
+                            Math.min(
+                              ...venue.sports.flatMap((s) => (s.courts || []).map((c) => c.price))
+                            )
+                          }+
                         </div>
                         <div className="text-sm text-gray-600">Starting Price/hr</div>
                       </div>
@@ -331,12 +260,13 @@ export default function SingleVenuePage({ params }) {
                         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
                           <div>
                             <h3 className="text-lg md:text-xl font-semibold mb-2">{sport.name}</h3>
-                            <p className="text-gray-600">{sport.courts} courts available</p>
+                            <p className="text-gray-600">{sport.courts?.length ?? 0} courts available</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-xl md:text-2xl font-bold text-green-600">₹{sport.price}</div>
-                            <div className="text-sm text-gray-500">per hour (off-peak)</div>
-                            <div className="text-sm text-gray-500">₹{sport.peakPrice} (peak hours)</div>
+                            <div className="text-sm text-gray-500">Starting from</div>
+                            <div className="text-xl md:text-2xl font-bold text-green-600">
+                              ₹{Math.min(...(sport.courts || []).map((c) => c.price))}
+                            </div>
                           </div>
                         </div>
                         <Link
@@ -354,30 +284,11 @@ export default function SingleVenuePage({ params }) {
               {activeTab === "amenities" && (
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold mb-6">Amenities & Facilities</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {venue.amenities.map((amenity, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-4 p-4 rounded-2xl ${
-                          amenity.available
-                            ? "bg-green-50 border border-green-200"
-                            : "bg-gray-50 border border-gray-200"
-                        }`}
-                      >
-                        <div className={`p-3 rounded-xl ${amenity.available ? "bg-green-100" : "bg-gray-100"}`}>
-                          <amenity.icon
-                            className={`w-6 h-6 ${amenity.available ? "text-green-600" : "text-gray-400"}`}
-                          />
-                        </div>
-                        <div>
-                          <span className={`font-medium ${amenity.available ? "text-green-900" : "text-gray-500"}`}>
-                            {amenity.name}
-                          </span>
-                          <div className="text-sm text-gray-500">
-                            {amenity.available ? "Available" : "Not Available"}
-                          </div>
-                        </div>
-                      </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(venue.amenities || []).map((amenity, index) => (
+                      <span key={index} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-xl text-sm">
+                        {amenity}
+                      </span>
                     ))}
                   </div>
                 </div>

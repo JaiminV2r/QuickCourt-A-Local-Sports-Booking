@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Search, MapPin, Star, ChevronDown, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
+import { useFacilitiesQuery } from "../../actions/facilities"
 
 export default function VenuesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -18,128 +19,23 @@ export default function VenuesPage() {
   const priceRanges = ["All Prices", "₹0-500", "₹500-1000", "₹1000-1500", "₹1500+"]
   const ratings = ["All Ratings", "4.5+", "4.0+", "3.5+", "3.0+"]
 
-  const allVenues = [
-    {
-      id: 1,
-      name: "SportZone Arena",
-      sports: ["Badminton", "Tennis"],
-      price: 500,
-      location: "Koramangala, Bangalore",
-      rating: 4.8,
-      reviews: 156,
-      image: "/vibrant-sports-arena.png",
-      amenities: ["Parking", "Changing Room", "Water", "AC"],
-      description: "Premium sports facility with modern amenities",
-      distance: "2.3 km",
-      nextSlot: "6:00 PM",
-      isOpen: true,
-    },
-    {
-      id: 2,
-      name: "Elite Sports Club",
-      sports: ["Football", "Basketball"],
-      price: 800,
-      location: "Indiranagar, Bangalore",
-      rating: 4.6,
-      reviews: 89,
-      image: "/vibrant-sports-club.png",
-      amenities: ["AC", "Parking", "Cafeteria", "Locker"],
-      description: "Professional grade courts with excellent facilities",
-      distance: "3.1 km",
-      nextSlot: "7:00 PM",
-      isOpen: true,
-    },
-    {
-      id: 3,
-      name: "Champions Court",
-      sports: ["Badminton", "Table Tennis"],
-      price: 400,
-      location: "Whitefield, Bangalore",
-      rating: 4.7,
-      reviews: 203,
-      image: "/badminton-court.png",
-      amenities: ["Parking", "Equipment Rental", "Water"],
-      description: "Affordable courts with quality equipment",
-      distance: "5.2 km",
-      nextSlot: "8:00 PM",
-      isOpen: true,
-    },
-    {
-      id: 4,
-      name: "Victory Grounds",
-      sports: ["Cricket", "Football"],
-      price: 1200,
-      location: "HSR Layout, Bangalore",
-      rating: 4.5,
-      reviews: 67,
-      image: "/cricket-ground.png",
-      amenities: ["Floodlights", "Parking", "Changing Room", "Cafeteria"],
-      description: "Large outdoor grounds with floodlight facilities",
-      distance: "4.8 km",
-      nextSlot: "9:00 PM",
-      isOpen: false,
-    },
-    {
-      id: 5,
-      name: "Ace Tennis Academy",
-      sports: ["Tennis"],
-      price: 600,
-      location: "Jayanagar, Bangalore",
-      rating: 4.9,
-      reviews: 124,
-      image: "/outdoor-tennis-court.png",
-      amenities: ["Coaching", "Equipment", "Parking", "AC"],
-      description: "Professional tennis courts with coaching available",
-      distance: "3.7 km",
-      nextSlot: "5:30 PM",
-      isOpen: true,
-    },
-    {
-      id: 6,
-      name: "Power Play Arena",
-      sports: ["Badminton", "Basketball"],
-      price: 700,
-      location: "Electronic City, Bangalore",
-      rating: 4.4,
-      reviews: 98,
-      image: "/outdoor-basketball-court.png",
-      amenities: ["AC", "Parking", "Snacks", "Water"],
-      description: "Modern indoor facility with air conditioning",
-      distance: "6.1 km",
-      nextSlot: "6:30 PM",
-      isOpen: true,
-    },
-  ]
+  const apiParams = useMemo(() => {
+    const parsedRating =
+      rating === "4.5+" ? 4.5 : rating === "4.0+" ? 4.0 : rating === "3.5+" ? 3.5 : rating === "3.0+" ? 3.0 : 0
+    return {
+      q: searchQuery || undefined,
+      sport: selectedSport && selectedSport !== "All Sports" ? selectedSport.toLowerCase() : undefined,
+      priceRange: priceRange || undefined,
+      rating: parsedRating || undefined,
+      page: currentPage,
+      limit: venuesPerPage,
+    }
+  }, [searchQuery, selectedSport, priceRange, rating, currentPage])
 
-  // Filter venues based on selected criteria
-  const filteredVenues = allVenues.filter((venue) => {
-    const matchesSearch =
-      venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      venue.location.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesSport =
-      !selectedSport || selectedSport === "All Sports" || venue.sports.some((sport) => sport === selectedSport)
-    const matchesPrice =
-      !priceRange ||
-      priceRange === "All Prices" ||
-      (priceRange === "₹0-500" && venue.price <= 500) ||
-      (priceRange === "₹500-1000" && venue.price > 500 && venue.price <= 1000) ||
-      (priceRange === "₹1000-1500" && venue.price > 1000 && venue.price <= 1500) ||
-      (priceRange === "₹1500+" && venue.price > 1500)
-    const matchesRating =
-      !rating ||
-      rating === "All Ratings" ||
-      (rating === "4.5+" && venue.rating >= 4.5) ||
-      (rating === "4.0+" && venue.rating >= 4.0) ||
-      (rating === "3.5+" && venue.rating >= 3.5) ||
-      (rating === "3.0+" && venue.rating >= 3.0)
-
-    return matchesSearch && matchesSport && matchesPrice && matchesRating
-  })
-
-  // Pagination
-  const totalPages = Math.ceil(filteredVenues.length / venuesPerPage)
-  const startIndex = (currentPage - 1) * venuesPerPage
-  const paginatedVenues = filteredVenues.slice(startIndex, startIndex + venuesPerPage)
+  const { data, isLoading } = useFacilitiesQuery(apiParams)
+  const items = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPages = data?.totalPages ?? 1
 
   return (
     <>
@@ -253,7 +149,7 @@ export default function VenuesPage() {
           {/* Results Count */}
           <div className="mb-6">
             <p className="text-gray-600">
-              Showing {paginatedVenues.length} of {filteredVenues.length} venues
+              {isLoading ? "Loading venues..." : `Showing ${items.length} of ${total} venues`}
             </p>
           </div>
 
@@ -265,12 +161,12 @@ export default function VenuesPage() {
                 : "space-y-4 mb-8"
             }
           >
-            {paginatedVenues.map((venue) => (
+            {(items).map((venue) => (
               <Link key={venue.id} href={`/venues/${venue.id}`} className="group">
                 {viewMode === "grid" ? (
                   <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">
                     <div className="relative">
-                      <img
+                       <img
                         src={venue.image || "/placeholder.svg"}
                         alt={venue.name}
                         className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
@@ -305,7 +201,7 @@ export default function VenuesPage() {
                         <span className="text-sm font-medium">{venue.rating}</span>
                         <span className="text-xs text-gray-500">({venue.reviews})</span>
                       </div>
-                      <div className="flex flex-wrap gap-1 mb-3">
+                       <div className="flex flex-wrap gap-1 mb-3">
                         {venue.sports.slice(0, 2).map((sport, index) => (
                           <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                             {sport}
@@ -378,15 +274,15 @@ export default function VenuesPage() {
                             </span>
                           ))}
                         </div>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {venue.amenities.slice(0, 4).map((amenity, index) => (
+                       <div className="flex flex-wrap gap-2 mb-4">
+                          {(venue.amenities || []).slice(0, 4).map((amenity, index) => (
                             <span key={index} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
                               {amenity}
                             </span>
                           ))}
-                          {venue.amenities.length > 4 && (
+                          {(venue.amenities || []).length > 4 && (
                             <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                              +{venue.amenities.length - 4} more
+                              +{(venue.amenities || []).length - 4} more
                             </span>
                           )}
                         </div>
@@ -408,7 +304,7 @@ export default function VenuesPage() {
           </div>
 
           {/* Empty State */}
-          {paginatedVenues.length === 0 && (
+          {!isLoading && items.length === 0 && (
             <div className="text-center py-12">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MapPin className="w-12 h-12 text-gray-400" />
