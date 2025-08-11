@@ -1,52 +1,23 @@
 "use client"
 
-import {
-  Users,
-  Building,
-  Calendar,
-  DollarSign,
-  Activity,
-  CheckCircle,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-} from "lucide-react"
+import { Users, Building, Calendar, DollarSign, Activity, CheckCircle, Clock, TrendingUp, AlertTriangle } from "lucide-react"
+import { useAdminStatsQuery, useAdminChartsQuery } from "@/actions/bookings"
+import { useAdminPendingFacilitiesQuery } from "@/actions/facilities"
+import { ChartContainer, ChartLegend, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from "recharts"
 
 export default function AdminDashboard() {
-  const stats = [
-    {
-      title: "Total Users",
-      value: "2,847",
-      change: "+12%",
-      changeType: "increase",
-      icon: Users,
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      title: "Total Facilities",
-      value: "156",
-      change: "+8%",
-      changeType: "increase",
-      icon: Building,
-      color: "from-green-500 to-green-600",
-    },
-    {
-      title: "Total Bookings",
-      value: "12,459",
-      change: "+23%",
-      changeType: "increase",
-      icon: Calendar,
-      color: "from-purple-500 to-purple-600",
-    },
-    {
-      title: "Revenue",
-      value: "₹8,45,230",
-      change: "+15%",
-      changeType: "increase",
-      icon: DollarSign,
-      color: "from-yellow-500 to-yellow-600",
-    },
-  ]
+  const { data: statsData } = useAdminStatsQuery()
+  const { data: charts } = useAdminChartsQuery()
+  const { data: pending = [] } = useAdminPendingFacilitiesQuery()
+  const stats = statsData
+    ? [
+        { title: "Total Users", value: statsData.totalUsers.toLocaleString(), icon: Users, color: "from-blue-500 to-blue-600" },
+        { title: "Total Owners", value: statsData.totalOwners.toLocaleString(), icon: Building, color: "from-green-500 to-green-600" },
+        { title: "Total Bookings", value: statsData.totalBookings.toLocaleString(), icon: Calendar, color: "from-purple-500 to-purple-600" },
+        { title: "Active Courts", value: statsData.totalActiveCourts.toLocaleString(), icon: DollarSign, color: "from-yellow-500 to-yellow-600" },
+      ]
+    : []
 
   const recentActivities = [
     {
@@ -79,32 +50,7 @@ export default function AdminDashboard() {
     },
   ]
 
-  const pendingApprovals = [
-    {
-      id: 1,
-      name: "Elite Sports Complex",
-      owner: "Rajesh Kumar",
-      location: "Indiranagar, Bangalore",
-      sports: ["Tennis", "Badminton"],
-      submittedDate: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Victory Grounds",
-      owner: "Priya Sharma",
-      location: "HSR Layout, Bangalore",
-      sports: ["Football", "Cricket"],
-      submittedDate: "2024-01-14",
-    },
-    {
-      id: 3,
-      name: "Power Play Arena",
-      owner: "Amit Patel",
-      location: "Electronic City, Bangalore",
-      sports: ["Basketball", "Volleyball"],
-      submittedDate: "2024-01-13",
-    },
-  ]
+  const pendingApprovals = pending.slice(0, 3)
 
   return (
     <>
@@ -226,26 +172,98 @@ export default function AdminDashboard() {
 
           {/* Charts Section */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Booking Trends */}
+            {/* Booking Activity Over Time */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Trends</h2>
-              <div className="h-64 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <TrendingUp className="w-12 h-12 text-blue-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Chart would be integrated here</p>
-                </div>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking Activity Over Time</h2>
+              {charts && (
+                <ChartContainer
+                  id="bookings"
+                  config={{ bookings: { label: 'Bookings', color: '#3b82f6' } }}
+                  className="h-64"
+                >
+                  <LineChart data={charts.bookingsOverTime}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Line type="monotone" dataKey="bookings" stroke="var(--color-bookings)" />
+                  </LineChart>
+                </ChartContainer>
+              )}
             </div>
 
-            {/* Revenue Analytics */}
+            {/* User Registration Trends */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue Analytics</h2>
-              <div className="h-64 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center">
-                <div className="text-center">
-                  <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Chart would be integrated here</p>
-                </div>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">User Registration Trends</h2>
+              {charts && (
+                <ChartContainer id="users" config={{ users: { label: 'Users', color: '#10b981' } }} className="h-64">
+                  <BarChart data={charts.userRegistrations}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Bar dataKey="users" fill="var(--color-users)" />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Charts */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Facility Approval Trend */}
+            <div className="bg-white rounded-2xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Facility Approval Trend</h2>
+              {charts && (
+                <ChartContainer id="approvals" config={{ approved: { label: 'Approved', color: '#f59e0b' } }} className="h-64">
+                  <LineChart data={charts.facilityApprovals}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Line type="monotone" dataKey="approved" stroke="var(--color-approved)" />
+                  </LineChart>
+                </ChartContainer>
+              )}
+            </div>
+
+            {/* Earnings Simulation Chart */}
+            <div className="bg-white rounded-2xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Earnings Simulation</h2>
+              {charts && (
+                <ChartContainer id="earnings" config={{ amount: { label: 'Earnings (₹)', color: '#8b5cf6' } }} className="h-64">
+                  <LineChart data={charts.earningsSimulated}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Line type="monotone" dataKey="amount" stroke="var(--color-amount)" />
+                  </LineChart>
+                </ChartContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Most Active Sports */}
+          <div className="mt-8 grid grid-cols-1">
+            <div className="bg-white rounded-2xl shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Most Active Sports</h2>
+              {charts && (
+                <ChartContainer id="sports" config={{ count: { label: 'Bookings', color: '#06b6d4' } }} className="h-64">
+                  <BarChart data={charts.mostActiveSports}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="sport" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Bar dataKey="count" fill="var(--color-count)" />
+                  </BarChart>
+                </ChartContainer>
+              )}
             </div>
           </div>
         </div>

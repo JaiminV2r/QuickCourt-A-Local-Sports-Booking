@@ -26,23 +26,34 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+function chooseClient(url) {
+  if (typeof url === 'string' && url.startsWith('/api/')) {
+    return axios
+  }
+  return api
+}
+
 export async function get(url, params, config) {
-  const res = await api.get(url, { params, ...(config ?? {}) })
+  const client = chooseClient(url)
+  const res = await client.get(url, { params, ...(config ?? {}) })
   return res.data
 }
 
 export async function post(url, data, config) {
-  const res = await api.post(url, data, config)
+  const client = chooseClient(url)
+  const res = await client.post(url, data, config)
   return res.data
 }
 
 export async function put(url, data, config) {
-  const res = await api.put(url, data, config)
+  const client = chooseClient(url)
+  const res = await client.put(url, data, config)
   return res.data
 }
 
 export async function del(url, config) {
-  const res = await api.delete(url, config)
+  const client = chooseClient(url)
+  const res = await client.delete(url, config)
   return res.data
 }
 
