@@ -40,7 +40,6 @@
     venueControllers.getAllApprovedVenues
   );
 
-
   router.get(
     '/:id',
     auth(ROLES.facility_owner),

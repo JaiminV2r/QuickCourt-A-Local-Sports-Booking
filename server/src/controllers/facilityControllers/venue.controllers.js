@@ -241,8 +241,9 @@ module.exports = {
     getVenue: catchAsync(async (req, res) => {
         const { id } = req.params;
 
-        const venue = await venueService.get(id);
+        const venue = await venueService.get({_id:id});
 
+        const courts = await Court.find({ venue_id: id, deleted_at: null });
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -253,7 +254,7 @@ module.exports = {
         return res.status(200).json({
             success: true,
             message: 'Venue fetched successfully',
-            data: venue,
+            data:{ venue , courts },
         });
     }),
 
