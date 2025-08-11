@@ -277,10 +277,13 @@ export default function OwnerFacilitiesPage() {
                         <Eye className="w-4 h-4" />
                         View Details
                       </Link>
-                      <button className="flex items-center gap-2 flex-1 justify-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium">
+                      <Link
+                        href={`/owner/facilities/add?id=${facility.id}`}
+                        className="flex items-center gap-2 flex-1 justify-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
                         <Edit className="w-4 h-4" />
                         Edit Facility
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>
