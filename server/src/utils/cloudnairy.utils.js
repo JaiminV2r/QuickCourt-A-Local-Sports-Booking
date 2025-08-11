@@ -82,11 +82,24 @@ const cldListByType = async (type, { max_results = 50, next_cursor } = {}) =>
     .next_cursor(next_cursor)
     .execute();
 
+
+    // Cloudinary image deletion
+const cldDeleteImage = async (publicId) => {
+  await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+};
+
+// Cloudinary video deletion
+const cldDeleteVideo = async (publicId) => {
+  await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+};
+
 module.exports = {
   publicIdFromName,
   urlFromName,
   cldUploadBuffer,
   cldUploadFile,
   cldDeleteByName,
-  cldListByType
+  cldListByType,
+  cldDeleteImage,
+  cldDeleteVideo
 };

@@ -2,7 +2,7 @@
 const { Schema, model, models } = require('mongoose');
 const { urlFromName } = require('../utils/cloudnairy.utils');
 const { FILE_FOLDERS } = require('../helper/constant.helper');
-
+const { toJSON , paginate} = require('./plugins');
 const SportSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, unique: true, index: true },
@@ -11,6 +11,9 @@ const SportSchema = new Schema(
   },
   { timestamps: true }
 );
+
+SportSchema.plugin(toJSON);
+SportSchema.plugin(paginate);
 
 // Add Cloudinary URL at response time
 SportSchema.set('toJSON', {

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { BOOKING } = require('../helper/constant.helper');
-
+const {paginate , toJSON} = require('./plugins')
 const SlotSchema = new mongoose.Schema(
   {
     start_at: { type: Date, required: true },
@@ -40,5 +40,8 @@ BookingSchema.index(
   { court_id: 1, 'slot.start_at': 1, 'slot.end_at': 1 },
   { partialFilterExpression: { status: { $in: ['confirmed', 'completed'] } } }
 );
+
+BookingSchema.plugin(paginate);
+BookingSchema.plugin(toJSON);
 
 module.exports = mongoose.model('Booking', BookingSchema);

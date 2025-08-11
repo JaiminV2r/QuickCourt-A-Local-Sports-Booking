@@ -1,5 +1,6 @@
 const Joi = require('joi');
-const { VENUE_STATUS } = require('../helper/constant.helper');
+const { VENUE_STATUS, SPORT_TYPE } = require('../helper/constant.helper');
+const { objectId } = require('./custom.validation');
 /**
  * All venue validations are exported from here 👇
  */
@@ -10,7 +11,7 @@ module.exports = {
     createVenue: {
         body: Joi.object()
             .keys({
-                name: Joi.string().trim().min(2).max(120).required(),
+                venue_name: Joi.string().trim().min(2).max(120).required(),
                 description: Joi.string().allow('', null),
 
                 address: Joi.string().trim().min(1).required(),
@@ -24,7 +25,7 @@ module.exports = {
                         coordinates: Joi.array()
                             .items(
                                 Joi.number().min(-180).max(180), // lng
-                                Joi.number().min(-90).max(90)    // lat
+                                Joi.number().min(-90).max(90) // lat
                             )
                             .length(2),
                     })
@@ -34,7 +35,9 @@ module.exports = {
                 amenities: Joi.array().items(Joi.string().trim()).max(50).default([]),
                 about: Joi.string().allow('', null),
 
-                venue_type: Joi.string().valid('indoor', 'outdoor', 'turf', 'hybrid').default('indoor'),
+                venue_type: Joi.string()
+                    .valid('indoor', 'outdoor', 'turf', 'hybrid')
+                    .default('indoor'),
                 starting_price_per_hour: Joi.number().min(0).default(0),
             })
             .required(),
@@ -48,6 +51,99 @@ module.exports = {
             page: Joi.number().default(1).allow(''),
             limit: Joi.number().default(10).allow(''),
             search: Joi.string().trim().allow(''),
-          venue_status: Joi.string().valid(...Object.values(VENUE_STATUS)).optional(),  }),
+            venue_status: Joi.string()
+                .valid(...Object.values(VENUE_STATUS))
+                .optional(),
+        }),
     },
+    getVenue: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+    addCourt: {
+        body: Joi.object().keys({
+            courts: Joi.array()
+                .items(
+                    Joi.object().keys({
+                        venue_id: Joi.string().custom(objectId).required(),
+                        court_name: Joi.string().min(2).max(120).required(),
+                        court_type: Joi.string()
+                            .valid(...SPORT_TYPE)
+                            .required(),
+                        price_per_hour: Joi.number().min(0).required(),
+                        operating_hours: Joi.string().min(5).max(50).required(), // Ensure operating hours format like "9 AM to 5 PM"
+                        availability: Joi.array()
+                            .items(
+                                Joi.object().keys({
+                                    day_of_week: Joi.string()
+                                        .valid(
+                                            'Monday',
+                                            'Tuesday',
+                                            'Wednesday',
+                                            'Thursday',
+                                            'Friday',
+                                            'Saturday',
+                                            'Sunday'
+                                        )
+                                        .required(),
+                                    time_slots: Joi.array()
+                                        .items(
+                                            Joi.object().keys({
+                                                start_time: Joi.string()
+                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
+                                                    .required(),
+                                                end_time: Joi.string()
+                                                    .pattern(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/) // 24-hour format HH:MM
+                                                    .required(),
+                                                price: Joi.number().min(0).required(),
+                                            })
+                                        )
+                                        .required(),
+                                })
+                            )
+                            .required(),
+                    })
+                )
+                .min(1) // Ensure that at least one court is added
+                .required(),
+        }),
+    },
+
+    updateCourt: Joi.object().keys({
+        court_name: Joi.string().min(2).max(120).optional(),
+        sport_type: Joi.string().valid('Badminton', 'Tennis', 'Football', 'Basketball').optional(),
+        pricing_per_hour: Joi.number().min(0).optional(),
+        operating_hours: Joi.string().min(5).max(50).optional(),
+        availability: Joi.array()
+            .items(
+                Joi.object().keys({
+                    day_of_week: Joi.string()
+                        .valid(
+                            'Monday',
+                            'Tuesday',
+                            'Wednesday',
+                            'Thursday',
+                            'Friday',
+                            'Saturday',
+                            'Sunday'
+                        )
+                        .required(),
+                    time_slots: Joi.array()
+                        .items(
+                            Joi.object().keys({
+                                start_time: Joi.string()
+                                    .pattern(/^(0[1-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/)
+                                    .required(),
+                                end_time: Joi.string()
+                                    .pattern(/^(0[1-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/)
+                                    .required(),
+                                price: Joi.number().min(0).required(),
+                            })
+                        )
+                        .required(),
+                })
+            )
+            .optional(),
+    }),
 };

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { VENUE_STATUS } = require('../helper/constant.helper');
 const { urlFromName } = require('../utils/cloudnairy.utils');
 
-
+const { toJSON,paginate } = require('./plugins')
 const VenueSchema = new mongoose.Schema(
   {
     owner_id: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -19,7 +19,7 @@ location: {
       coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
     },
 
-    sports: [{ type: mongoose.Types.ObjectId, ref: 'Sport'}], // slugs
+    sports: [{ type: String , default : null}], // slugs
     amenities: [String],
 
     // store ONLY image names; URLs are computed at response time
@@ -45,6 +45,8 @@ location: {
   { timestamps: true }
 );
 
+VenueSchema.plugin(paginate);
+VenueSchema.plugin(toJSON);
 
 // Add Cloudinary URLs at response time without storing them
 VenueSchema.set('toJSON', {

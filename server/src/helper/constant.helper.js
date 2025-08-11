@@ -53,4 +53,12 @@ module.exports = {
         REJECTED: 'rejected',
     },
 
+    SPORT_TYPE: [
+        'Badminton',
+        'Football',
+        'Basketball',
+        'Tennis',
+        'Cricket',
+    ]
+
 };

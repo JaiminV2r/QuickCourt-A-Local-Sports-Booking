@@ -1,1 +1,1 @@
-module.exports = require('./venueControllers')
+module.exports = require('./venue.controllers')

@@ -1,6 +1,6 @@
 const express = require('express');
 
-const venueRoutes = require('./venueRoute');
+const venueRoutes = require('./venue.route');
 
 
 const router = express.Router();

@@ -1,35 +1,35 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const {toJSON , paginate} = require('./plugins')
 
-const DayHoursSchema = new mongoose.Schema(
-  { open: { type: String }, close: { type: String } },
-  { _id: false }
-);
-
-const OperatingHoursSchema = new mongoose.Schema(
-  {
-    mon: { type: DayHoursSchema },
-    tue: { type: DayHoursSchema },
-    wed: { type: DayHoursSchema },
-    thu: { type: DayHoursSchema },
-    fri: { type: DayHoursSchema },
-    sat: { type: DayHoursSchema },
-    sun: { type: DayHoursSchema }
+const CourtSchema = new Schema({
+  venue_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'Venue',
+    required: true
   },
-  { _id: false }
-);
+  court_name: { type: String, required: true },
+  sport_type: { type: String, required: true },
+  pricing_per_hour: { type: Number, required: true },
+  operating_hours: { type: String, required: true },  // Example: "9 AM to 5 PM"
+  availability: [
+    {
+      day_of_week: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], required: true },
+      time_slots: [
+        {
+          start_time: { type: String, required: true }, // Example: "07:00 AM"
+          end_time: { type: String, required: true },   // Example: "10:00 AM"
+          price: { type: Number, required: true },
+          is_maintenance: { type: Boolean, default: false }  // Whether the time slot is blocked for maintenance
+        }
+      ]
+    }
+  ],
+  deleted_at: { type: Date, default: null }
+});
 
-const CourtSchema = new mongoose.Schema(
-  {
-    venue_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Venue', required: true, index: true },
-    name: { type: String, required: true, trim: true },
-    sport_type: { type: String, required: true, index: true }, // badminton, football, tennis...
-    price_per_hour: { type: Number, required: true, min: 0 },
-    currency: { type: String, default: 'INR' },
-    operating_hours: { type: OperatingHoursSchema, required: true },
-    notes: { type: String },
-    is_active: { type: Boolean, default: true, index: true }
-  },
-  { timestamps:true  }
-);
+
+CourtSchema.plugin(toJSON);
+CourtSchema.plugin(paginate);
 
 module.exports = mongoose.model('Court', CourtSchema);
