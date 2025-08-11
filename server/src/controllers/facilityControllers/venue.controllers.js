@@ -243,7 +243,7 @@ module.exports = {
 
         const venue = await venueService.get({_id:id});
 
-        const courts = await Court.find({ venue_id: id, deleted_at: null });
+        const courts = await Court.find({ venue_id: new mongoose.Types.ObjectId(id), deleted_at: null });
         if (!venue) {
             return res.status(404).json({
                 success: false,
