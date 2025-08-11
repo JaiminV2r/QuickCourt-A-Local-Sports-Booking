@@ -12,6 +12,7 @@ module.exports = {
     createVenue: {
         body: Joi.object()
             .keys({
+                phone: Joi.string().trim().optional().allow('',null),
                 venue_name: Joi.string().trim().min(2).max(120).required(),
                 description: Joi.string().allow('', null),
                 address: Joi.string().trim().min(1).required(),
