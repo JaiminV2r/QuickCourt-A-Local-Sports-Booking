@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { get, post } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
@@ -8,17 +8,50 @@ import { queryKeys } from './query-keys'
 export function useMeQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.auth,
-    queryFn: () => get(endpoints.auth.me),
+    queryFn: async () => {
+      if (typeof window === 'undefined') return null
+      const stored = localStorage.getItem('quickcourt_auth')
+      return stored ? JSON.parse(stored) : null
+    },
     enabled,
   })
 }
 
-export async function loginAction(data) {
-  return post(endpoints.auth.login, data)
+export function useLoginMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.login, payload),
+    onSuccess: (res) => {
+      // If user is verified, server returns data.user and tokens
+      if (res?.data?.user && res?.data?.tokens) {
+        const auth = { user: res.data.user, tokens: res.data.tokens }
+        localStorage.setItem('quickcourt_auth', JSON.stringify(auth))
+        localStorage.setItem('quickcourt_user', JSON.stringify(res.data.user))
+        qc.invalidateQueries({ queryKey: queryKeys.auth })
+      }
+    },
+  })
 }
 
-export async function signupAction(data) {
-  return post(endpoints.auth.signup, data)
+export function useRegisterMutation() {
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.register, payload),
+  })
+}
+
+export function useVerifyOtpMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.verifyOtp, payload),
+    onSuccess: (res) => {
+      if (res?.data?.user && res?.data?.tokens) {
+        const auth = { user: res.data.user, tokens: res.data.tokens }
+        localStorage.setItem('quickcourt_auth', JSON.stringify(auth))
+        localStorage.setItem('quickcourt_user', JSON.stringify(res.data.user))
+        qc.invalidateQueries({ queryKey: queryKeys.auth })
+      }
+    },
+  })
 }
 
 // Admin: mock me endpoint if backend not present

@@ -1,38 +1,34 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "../../../contexts/auth-context"
+import { useRouter } from "next/navigation"
+import { useRegisterMutation, useVerifyOtpMutation } from "../../../actions/auth"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, ArrowRight, ArrowLeft } from "lucide-react"
 import { Formik, Form } from "formik"
 import TextField from "../../../components/formik/TextField"
 import { signupSchema } from "../../../validation/schemas"
+import { toast } from "react-toastify"
 
 export default function SignupPage() {
   const [step, setStep] = useState(1) // 1: Form, 2: OTP
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
-    role: "player",
+    role: "",
   })
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
 
-  const { signup, verifyOTP } = useAuth()
+  const registerMutation = useRegisterMutation()
+  const verifyOtpMutation = useVerifyOtpMutation()
+  const router = useRouter()
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+
 
   const handleOtpChange = (index, value) => {
     if (value.length <= 1) {
@@ -50,13 +46,19 @@ export default function SignupPage() {
 
   const handleSubmit = async (values) => {
     setLoading(true)
-    setError("")
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setFormData(values)
+      const payload = { full_name: values.full_name, email: values.email, password: values.password, role: values.role }
+      const res = await registerMutation.mutateAsync(payload)
+      if (!res?.success) {
+        throw new Error(res?.message || 'Registration failed')
+      }
+      setFormData(payload)
       setStep(2)
+      toast.success(`OTP sent to ${payload.email}`)
     } catch (err) {
-      setError("Failed to send OTP. Please try again.")
+      console.log('🔥🔥🔥🔥err?.message🔥🔥🔥🔥🔥',err);
+      const message = err?.response?.data?.message || "Failed to send OTP. Please try again."
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -65,22 +67,20 @@ export default function SignupPage() {
   const handleOTPSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError("")
 
     const otpString = otp.join("")
 
     try {
-      const isValid = await verifyOTP(otpString)
-      if (!isValid) {
-        setError("Invalid OTP. Please try again.")
-        setLoading(false)
-        return
+      const res = await verifyOtpMutation.mutateAsync({ email: formData.email, otp: otpString })
+      if (res?.success && res?.data?.user) {
+        toast.success("Account created. Email verified.")
+        router.replace("/")
+      } else {
+        throw new Error(res?.message || 'OTP invalid')
       }
-
-      await signup(formData)
-      window.location.href = formData.role === "owner" ? "/owner" : "/"
     } catch (err) {
-      setError("Failed to create account. Please try again.")
+      const message = err?.response?.data?.message || "Failed to verify OTP. Please try again."
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -94,9 +94,9 @@ export default function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <span className="text-2xl font-bold text-white">QC</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{step === 1 ? "Create Account" : "Verify Phone"}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{step === 1 ? "Create Account" : "Verify Email"}</h1>
           <p className="text-gray-600">
-            {step === 1 ? "Join QuickCourt and start booking" : `Enter the code sent to ${formData.phone}`}
+            {step === 1 ? "Join QuickCourt and start booking" : `Enter the code sent to ${formData.email}`}
           </p>
         </div>
 
@@ -125,27 +125,21 @@ export default function SignupPage() {
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
           {step === 1 ? (
             <Formik initialValues={formData} validationSchema={signupSchema} onSubmit={handleSubmit} enableReinitialize>
-              {({ values, setFieldValue }) => (
+              {({ values, setFieldValue, errors, touched, submitCount }) => (
                 <Form className="space-y-6">
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                      {error}
-                    </div>
-                  )}
 
-                  <TextField name="name" type="text" label="Full Name" leftIcon={User} placeholder="Enter your full name" />
+
+                  <TextField name="full_name" type="text" label="Full Name" leftIcon={User} placeholder="Enter your full name" />
                   <TextField name="email" type="email" label="Email Address" leftIcon={Mail} placeholder="Enter your email" />
-                  <TextField name="phone" type="text" label="Phone" leftIcon={Phone} placeholder="Enter phone number" />
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Account Type</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setFieldValue('role', 'player')}
+                        onClick={() => setFieldValue('role', '6899b352da334038dbe9c001')}
                         className={`p-4 border-2 rounded-xl text-left transition-all ${
-                          values.role === "player"
+                          values.role === '6899b352da334038dbe9c001'
                             ? "border-blue-500 bg-blue-50 text-blue-700"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
@@ -155,9 +149,9 @@ export default function SignupPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setFieldValue('role', 'owner')}
+                        onClick={() => setFieldValue('role', '6899b352da334038dbe9c004')}
                         className={`p-4 border-2 rounded-xl text-left transition-all ${
-                          values.role === "owner"
+                          values.role === '6899b352da334038dbe9c004'
                             ? "border-blue-500 bg-blue-50 text-blue-700"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
@@ -166,6 +160,9 @@ export default function SignupPage() {
                         <div className="text-sm text-gray-600">Manage facilities</div>
                       </button>
                     </div>
+                    {errors.role && (touched.role || submitCount > 0) && (
+                      <p className="text-sm text-red-600">{errors.role}</p>
+                    )}
                   </div>
 
                   <TextField
@@ -201,25 +198,6 @@ export default function SignupPage() {
                       </button>
                     )}
                   />
-
-                  <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-                      required
-                    />
-                    <span className="ml-3 text-sm text-gray-600">
-                      I agree to the{" "}
-                      <Link href="/terms" className="text-blue-600 hover:text-blue-700 font-medium">
-                        Terms of Service
-                      </Link>{" "}
-                      and{" "}
-                      <Link href="/privacy" className="text-blue-600 hover:text-blue-700 font-medium">
-                        Privacy Policy
-                      </Link>
-                    </span>
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading}
@@ -242,19 +220,14 @@ export default function SignupPage() {
             </Formik>
           ) : (
             <form onSubmit={handleOTPSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                  {error}
-                </div>
-              )}
+
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-8 h-8 text-blue-600" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Enter Verification Code</h3>
-                <p className="text-gray-600 text-sm">We've sent a 6-digit code to your phone</p>
+                <p className="text-gray-600 text-sm">We've sent a 6-digit code to your email</p>
               </div>
 
               <div>
@@ -305,12 +278,6 @@ export default function SignupPage() {
                 <button type="button" className="text-blue-600 hover:text-blue-700 font-medium">
                   Resend Code
                 </button>
-              </div>
-
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <p className="text-yellow-800 text-sm text-center">
-                  Demo OTP: <strong>123456</strong>
-                </p>
               </div>
             </form>
           )}

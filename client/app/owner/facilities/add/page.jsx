@@ -3,6 +3,7 @@
 import Layout from "../../../../components/layout"
 import ProtectedRoute from "../../../../components/protected-route"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Plus, X, MapPin, Clock, DollarSign, Users } from "lucide-react"
 import Link from "next/link"
 import { Formik, Form, Field, ErrorMessage } from "formik"
@@ -12,6 +13,7 @@ import { facilityAddSchema } from "@/validation/schemas"
 
 export default function AddFacilityPage() {
   const [step, setStep] = useState(1)
+  const router = useRouter()
 
   const initialValues = {
     name: "",
@@ -104,7 +106,7 @@ export default function AddFacilityPage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000))
       alert("Facility submitted for approval! You'll receive an email confirmation shortly.")
-      window.location.href = "/owner/facilities"
+      router.push("/owner/facilities")
     } catch (error) {
       setStatus({ error: "Failed to submit facility. Please try again." })
     } finally {

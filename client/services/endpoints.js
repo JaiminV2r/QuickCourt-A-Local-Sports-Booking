@@ -1,8 +1,8 @@
 export const endpoints = {
   auth: {
     login: '/auth/login',
-    signup: '/auth/signup',
-    me: '/auth/me',
+    register: '/auth/register',
+    verifyOtp: '/auth/verify-otp',
   },
   admin: {
     stats: '/api/admin/stats',

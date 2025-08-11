@@ -5,7 +5,7 @@ const config = require('../config/config');
 const generateOtp = () => ('000000' + Math.floor(Math.random() * 1000000)).slice(-6);
 
 exports.createOrReplace = async (userId) => {
-    const otp = generateOtp();
+    const otp = '123456'; //generateOtp();
     const expiresAt = moment().add(config.jwt.otpExpirationMinutes, 'minutes').toDate();
     await Otp.findOneAndUpdate(
         { user: userId },

@@ -1,34 +1,36 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "../../../contexts/auth-context"
+import { useRouter } from "next/navigation"
+import { useLoginMutation } from "../../../actions/auth"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
 import { Formik, Form } from "formik"
 import TextField from "../../../components/formik/TextField"
 import { loginSchema } from "../../../validation/schemas"
+import { toast } from "react-toastify"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
 
-  const { login } = useAuth()
+  const loginMutation = useLoginMutation()
+  const router = useRouter()
 
   const handleSubmit = async (values) => {
     setLoading(true)
-    setError("")
     try {
-      const user = await login(values.email, values.password)
-      if (user.role === "admin") {
-        window.location.href = "/admin"
-      } else if (user.role === "owner") {
-        window.location.href = "/owner"
+      const res = await loginMutation.mutateAsync({ email: values.email, password: values.password })
+      if (res?.success && res?.data?.user) {
+        toast.success("Signed in. Welcome back!")
+        router.replace("/")
       } else {
-        window.location.href = "/"
+        const message = res?.message || "Login failed"
+        toast.error(message)
       }
     } catch (err) {
-      setError("Invalid email or password")
+      const message = err?.response?.data?.message || "Invalid email or password"
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -51,12 +53,6 @@ export default function LoginPage() {
           <Formik initialValues={{ email: "", password: "" }} validationSchema={loginSchema} onSubmit={handleSubmit}>
             {() => (
               <Form className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                {error}
-              </div>
-            )}
 
                 <TextField name="email" type="email" label="Email Address" leftIcon={Mail} placeholder="Enter your email" />
 
@@ -115,25 +111,6 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
-          </div>
-
-          {/* Demo Accounts */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-2xl">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Demo Accounts:</h3>
-            <div className="space-y-2 text-xs text-gray-600">
-              <div className="flex justify-between">
-                <span>Player:</span>
-                <span className="font-mono">player@demo.com / password</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Owner:</span>
-                <span className="font-mono">owner@demo.com / password</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Admin:</span>
-                <span className="font-mono">admin@demo.com / password</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

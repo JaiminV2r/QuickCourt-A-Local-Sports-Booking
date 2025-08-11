@@ -1,8 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api',
-  withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5999/v1',
+  // Use bearer tokens, not cookies, to avoid credentialed CORS.
+  withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -10,17 +11,18 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const storedUser = localStorage.getItem('quickcourt_user')
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser)
-        if (user?.token) {
+    try {
+      const storedAuth = localStorage.getItem('quickcourt_auth')
+      if (storedAuth) {
+        const parsed = JSON.parse(storedAuth)
+        const token = parsed?.tokens?.access?.token
+        if (token) {
           config.headers = config.headers ?? {}
-          config.headers.Authorization = `Bearer ${user.token}`
+          config.headers.Authorization = `Bearer ${token}`
         }
-      } catch (e) {
-        // ignore JSON parse error
       }
+    } catch (e) {
+      // ignore JSON parse error
     }
   }
   return config

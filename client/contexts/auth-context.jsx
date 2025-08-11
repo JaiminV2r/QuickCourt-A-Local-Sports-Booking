@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
+import { useLoginMutation, useRegisterMutation, useVerifyOtpMutation } from "../actions/auth"
 
 const AuthContext = createContext()
 
@@ -28,68 +29,50 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const loginMutation = useLoginMutation()
+  const registerMutation = useRegisterMutation()
+  const verifyOtpMutation = useVerifyOtpMutation()
+
   useEffect(() => {
-    // Check for stored user data
     const storedUser = localStorage.getItem("quickcourt_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
+    if (storedUser) setUser(JSON.parse(storedUser))
     setLoading(false)
   }, [])
 
-  const login = async (email, password) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock user data based on email
-    let userData
-    if (email.includes("admin")) {
-      userData = {
-        id: 1,
-        name: "Admin User",
-        email,
-        role: "admin",
-        phone: "+91 9876543210",
-      }
-    } else if (email.includes("owner")) {
-      userData = {
-        id: 2,
-        name: "Facility Owner",
-        email,
-        role: "owner",
-        phone: "+91 9876543211",
-        facilityId: "FAC001",
-      }
-    } else {
-      userData = {
-        id: 3,
-        name: "John Doe",
-        email,
-        role: "player",
-        phone: "+91 9876543212",
-      }
+  function decodeAccessTokenRole(accessToken) {
+    if (!accessToken) return null
+    try {
+      const [, payload] = accessToken.split('.')
+      const json = JSON.parse(atob(payload))
+      const role = json?.role
+      if (!role) return null
+      const roleLower = (role || '').toString().toLowerCase()
+      if (roleLower.includes('admin')) return 'admin'
+      if (roleLower.includes('owner')) return 'owner'
+      if (roleLower.includes('facility')) return 'owner'
+      return 'player'
+    } catch {
+      return null
     }
-
-    setUser(userData)
-    localStorage.setItem("quickcourt_user", JSON.stringify(userData))
-    setAuthCookie(userData)
-    return userData
   }
 
-  const signup = async (userData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      role: userData.role || "player",
+  const login = async (email, password) => {
+    const res = await loginMutation.mutateAsync({ email, password })
+    if (res?.data?.user) {
+      const u = res.data.user
+      setUser(u)
+      const accessToken = res?.data?.tokens?.access?.token
+      const roleKey = decodeAccessTokenRole(accessToken) || 'player'
+      setAuthCookie({ id: u._id, name: u.full_name, email: u.email, role: roleKey })
+      return u
     }
+    // When email not verified, server responds with success true and message, but no data.user
+    return null
+  }
 
-    setUser(newUser)
-    localStorage.setItem("quickcourt_user", JSON.stringify(newUser))
-    setAuthCookie(newUser)
-    return newUser
+  const signup = async (payload) => {
+    // payload: { full_name, email, password, role }
+    return registerMutation.mutateAsync(payload)
   }
 
   const logout = () => {
@@ -98,10 +81,17 @@ export function AuthProvider({ children }) {
     clearAuthCookie()
   }
 
-  const verifyOTP = async (otp) => {
-    // Simulate OTP verification
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return otp === "123456" // Mock OTP
+  const verifyOTP = async ({ email, otp }) => {
+    const res = await verifyOtpMutation.mutateAsync({ email, otp })
+    if (res?.data?.user) {
+      const u = res.data.user
+      setUser(u)
+      const accessToken = res?.data?.tokens?.access?.token
+      const roleKey = decodeAccessTokenRole(accessToken) || 'player'
+      setAuthCookie({ id: u._id, name: u.full_name, email: u.email, role: roleKey })
+      return true
+    }
+    return false
   }
 
   const value = {

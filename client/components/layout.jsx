@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "../contexts/auth-context"
 import {
@@ -67,8 +68,8 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                     <User className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                    <div className="text-gray-500 capitalize">{user.role}</div>
+                    <div className="font-medium text-gray-900">{user.full_name}</div>
+                    <div className="text-gray-500">{user.email}</div>
                   </div>
                 </div>
                 <button
@@ -135,8 +136,8 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                       <User className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="text-sm">
-                      <div className="font-medium text-gray-900">{user.name}</div>
-                      <div className="text-gray-500 capitalize">{user.role}</div>
+                      <div className="font-medium text-gray-900">{user.full_name}</div>
+                      <div className="text-gray-500 ">{user.email}</div>
                     </div>
                   </div>
                   <button
@@ -226,6 +227,7 @@ function Footer() {
 function LayoutInner({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { user, logout } = useAuth()
+  const router = useRouter()
 
   const getNavItems = () => {
     if (!user) {
@@ -267,7 +269,7 @@ function LayoutInner({ children }) {
 
   const handleLogout = () => {
     logout()
-    window.location.href = "/auth/login"
+    router.replace("/auth/login")
   }
 
   // Always render header/footer — regardless of auth

@@ -1,21 +1,34 @@
 import * as Yup from 'yup'
 
+// Mirror backend password rules:
+// /^(?=.*[A-Z])(?=.*\d)(?=.*[@#])[A-Za-z\d@#]{8,20}$/
+const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@#])[A-Za-z\d@#]{8,20}$/
+const passwordMessage = 'Use 8-20 characters with at least one uppercase letter, one number, and one special symbol like @ or #'
+
 export const loginSchema = Yup.object({
   email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string().min(6, 'Must be at least 6 characters').required('Password is required'),
+  password: Yup.string()
+    .matches(passwordRegex, passwordMessage)
+    .required('Password is required'),
 })
 
+const allowedRoleIds = [
+  '6899b352da334038dbe9c001', // Player
+  '6899b352da334038dbe9c004', // Owner
+]
+
 export const signupSchema = Yup.object({
-  name: Yup.string().min(2, 'Enter your full name').required('Name is required'),
+  full_name: Yup.string().min(2, 'Enter your full name').required('Full name is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
-  phone: Yup.string()
-    .matches(/^[0-9+\-()\s]{7,}$/i, 'Enter a valid phone number')
-    .required('Phone is required'),
-  password: Yup.string().min(6, 'Must be at least 6 characters').required('Password is required'),
+  password: Yup.string()
+    .matches(passwordRegex, passwordMessage)
+    .required('Password is required'),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
     .required('Please confirm your password'),
-  role: Yup.string().oneOf(['player', 'owner', 'admin']).default('player'),
+  role: Yup.string()
+    .oneOf(allowedRoleIds, 'Please select Account Type')
+    .required('Account Type is required'),
 })
 
 export const otpSchema = Yup.object({
