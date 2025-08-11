@@ -12,6 +12,18 @@ export function useAuth() {
   return context
 }
 
+function setAuthCookie(user) {
+  try {
+    const value = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }))
+    // 7 days expiry
+    document.cookie = `quickcourt_user=${value}; path=/; max-age=${7 * 24 * 60 * 60}`
+  } catch {}
+}
+
+function clearAuthCookie() {
+  document.cookie = "quickcourt_user=; path=/; max-age=0"
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -60,6 +72,7 @@ export function AuthProvider({ children }) {
 
     setUser(userData)
     localStorage.setItem("quickcourt_user", JSON.stringify(userData))
+    setAuthCookie(userData)
     return userData
   }
 
@@ -75,12 +88,14 @@ export function AuthProvider({ children }) {
 
     setUser(newUser)
     localStorage.setItem("quickcourt_user", JSON.stringify(newUser))
+    setAuthCookie(newUser)
     return newUser
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem("quickcourt_user")
+    clearAuthCookie()
   }
 
   const verifyOTP = async (otp) => {
