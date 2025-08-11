@@ -33,6 +33,12 @@
     validate(venueValidation.getAllVenues),
     venueControllers.getAllVenues
   );
+  router.get(
+    '/approved/list',
+    // auth(ROLES.facility_owner),
+    validate(venueValidation.getAllApprovedVenues),
+    venueControllers.getAllApprovedVenues
+  );
 
 
   router.get(
