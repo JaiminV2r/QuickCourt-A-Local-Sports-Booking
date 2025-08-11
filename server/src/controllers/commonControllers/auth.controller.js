@@ -61,7 +61,16 @@ module.exports = {
     verifyOtp: catchAsync(async (req, res) => {
         const { email, otp } = req.body;
 
-        let emailExist = await userService.get({ email, deleted_at: null }); // Get user by email.
+        let emailExist = await userService.get(
+            { email, deleted_at: null },
+            {},
+            {
+                lean: true,
+                populate: {
+                    path: 'role',
+                },
+            }
+        ); // Get user by email.
 
         if (!emailExist) {
             throw new ApiError(httpStatus.NOT_FOUND, 'Email not found'); // If email doesn't exist, throw an error.
@@ -102,9 +111,19 @@ module.exports = {
         const { body } = req;
 
         let resMessage,
-            data = {};
+            data = {},
+            isEmailNotVerify = false;
 
-        let emailExist = await userService.get({ email: body.email, deleted_at: null }); // Get user by email.
+        let emailExist = await userService.get(
+            { email: body.email, deleted_at: null },
+            {},
+            {
+                lean: true,
+                populate: {
+                    path: 'role',
+                },
+            }
+        ); // Get user by email.
 
         if (!emailExist) {
             throw new ApiError(httpStatus.NOT_FOUND, 'Email not found'); // If email doesn't exist, throw an error.
@@ -131,6 +150,8 @@ module.exports = {
                 throw new ApiError(httpStatus.BAD_REQUEST, 'Something went wrong'); // If mail doesn't send, throw an error.
             }
 
+            isEmailNotVerify = true;
+
             resMessage = 'OTP sent to your email';
         } else {
             if (!emailExist.password || !(await emailExist.isPasswordMatch(body.password))) {
@@ -143,7 +164,12 @@ module.exports = {
             resMessage = 'Login successfully';
         }
 
-        res.status(httpStatus.OK).json({ success: true, message: resMessage, data });
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: resMessage,
+            data,
+            isEmailNotVerify,
+        });
     }),
 
     /**
@@ -240,39 +266,6 @@ module.exports = {
     }),
 
     /**
-     * PUT: Reset password.
-     */
-    resetPassword: catchAsync(async (req, res) => {
-        const { body } = req;
-
-        const emailExist = await userService.get({ email: body.email, deleted_at: null }); // Get user by email.
-
-        if (!emailExist) {
-            throw new ApiError(httpStatus.NOT_FOUND, 'Email not found'); // If email doesn't exist, throw an error.
-        }
-
-        if (!emailExist.is_active) {
-            throw new ApiError(httpStatus.UNAUTHORIZED, 'Your account is blocked by admin.'); // If the user is blocked, throw an error.
-        }
-
-        const check = await otpService.verifyAndConsume(emailExist._id, body.otp);
-        if (!check.ok) {
-            if (check.reason === 'expired')
-                throw new ApiError(httpStatus.BAD_REQUEST, 'OTP expired');
-            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid');
-        }
-
-        const bcryptPassword = await bcrypt.hash(body.password, 8); // New password bcrypt.
-
-        await userService.update({ _id: emailExist._id }, { $set: { password: bcryptPassword } }); // Update user password by _id.
-
-        res.status(httpStatus.OK).json({
-            success: true,
-            message: 'Password reset successfully',
-        });
-    }),
-
-    /**
      * PUT: Change password.
      */
     changePassword: catchAsync(async (req, res) => {
@@ -283,12 +276,97 @@ module.exports = {
         }
 
         const bcryptPassword = await bcrypt.hash(body.new_password, 8); // New password bcrypt.
-
         await userService.update({ _id: user._id }, { $set: { password: bcryptPassword } }); // Update user password by _id.
 
         res.status(httpStatus.OK).json({
             success: true,
             message: 'Password changed successfully',
+        });
+    }),
+
+    /**
+     * POST: Forgot password.
+     */
+    forgotPassword: catchAsync(async (req, res) => {
+        const { email } = req.body;
+
+        const user = await userService.get({ email, deleted_at: null });
+        if (!user) {
+            throw new ApiError(httpStatus.NOT_FOUND, 'Email not found');
+        }
+
+        if (!user.is_active) {
+            throw new ApiError(httpStatus.UNAUTHORIZED, 'Account blocked');
+        }
+
+        // Generate reset password token
+        const resetToken = await tokenService.generateResetPasswordToken(user._id);
+
+        // Create reset password link
+        const resetLink = `${process.env.FRONT_URL}/reset-password?token=${resetToken}`;
+
+        // Send email with reset link
+        const mailSent = await emailService.sendTemplateEmail({
+            to: email,
+            subject: 'Reset Password',
+            template: 'resetPasswordEmailTemplate',
+            data: {
+                full_name: user.full_name,
+                email: user.email,
+                reset_link: resetLink,
+            },
+        });
+
+        if (!mailSent) {
+            throw new ApiError(httpStatus.BAD_REQUEST, 'Failed to send reset password email');
+        }
+
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Reset password link sent to your email',
+        });
+    }),
+
+    /**
+     * PUT: Reset password.
+     */
+    resetPassword: catchAsync(async (req, res) => {
+        const { token, password: newPassword } = req.body;
+
+        // Verify reset token
+        const tokenData = await tokenService.verifyResetPasswordToken(token);
+        if (!tokenData) {
+            throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid or expired reset token');
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 8);
+
+        // Update user password
+        await userService.update({ _id: tokenData.user }, { $set: { password: hashedPassword } });
+
+        // Delete the reset token
+        await tokenService.deleteOne({ _id: tokenData._id });
+
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Password reset successfully',
+        });
+    }),
+
+    /**
+     * GET: Get roles list (excluding Admin).
+     */
+    getRoles: catchAsync(async (req, res) => {
+        const roles = await roleService.getRoleList(
+            { role: { $ne: 'Admin' }, is_active: true, deleted_at: null },
+            { role: 1, name: 1 }
+        );
+
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Roles retrieved successfully',
+            data: roles,
         });
     }),
 };

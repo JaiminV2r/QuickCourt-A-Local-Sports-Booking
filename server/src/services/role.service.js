@@ -1,7 +1,6 @@
 const httpStatus = require('http-status');
 const { Role } = require('../models');
 const ApiError = require('../utils/apiError');
- 
 
 /**
  * Get role by name.
@@ -16,4 +15,15 @@ exports.getRoleByName = async (roleName) => {
     }
 
     return role;
+};
+
+/**
+ * Get role list.
+ * @param {Object} filter
+ * @param {Object} projection
+ * @param {import('mongoose').QueryOptions} options
+ * @returns {Promise<Role[]>}
+ */
+exports.getRoleList = async (filter, projection = {}, options = {}) => {
+    return await Role.find(filter, projection, options);
 };
