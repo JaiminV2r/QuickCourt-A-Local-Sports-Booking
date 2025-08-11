@@ -50,6 +50,17 @@ exports.getAll = async (filter, options = {}) => {
 };
 
 /**
+ * Get user booking history.
+ * @param {Object} filter
+ * @param {Object} options
+ * @returns {Promise<Object>}
+ */
+exports.getUserBookingHistory = async (filter, options = {}) => {
+    const { Booking } = require('../models');
+    return Booking.paginate(filter, options);
+};
+
+/**
  * Aggregate users by filter.
  * @param {Object} filter
  * @returns {Promise<User>}

@@ -18,10 +18,20 @@ router.get(
 );
 
 /**
+ * Get user booking history.
+ */
+router.get(
+    '/:userId/bookings',
+    auth(ROLES.admin),
+    validate(userValidation.getUserBookingHistory),
+    userController.getUserBookingHistory
+);
+
+/**
  * Get single user.
  */
 router.get(
-    '/get/:userId',
+    '/:userId',
     auth(ROLES.admin),
     validate(userValidation.getUserById),
     userController.getUserById

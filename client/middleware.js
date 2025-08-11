@@ -10,8 +10,8 @@ function parseUserCookie(cookieValue) {
 }
 
 const PROTECTED_ROUTES = {
-  '/admin': ROLES.admin,
-  '/owner': ROLES.facility_owner,
+  '/admin': [ROLES.admin],
+  '/owner': [ROLES.facility_owner],
   '/my-bookings': [ROLES.player, ROLES.facility_owner, ROLES.admin],
   '/profile': [ROLES.player, ROLES.facility_owner, ROLES.admin],
 }
@@ -28,6 +28,17 @@ function getAllowedRoles(pathname) {
 function getRedirectForRole(role) {
   const roleToPath = { [ROLES.admin]: '/admin', [ROLES.facility_owner]: '/owner' }
   return roleToPath[role] || '/'
+}
+
+function hasRoleAccess(userRole, allowedRoles) {
+  if (!allowedRoles || !userRole) return false
+  
+  // Handle both array and string cases
+  if (Array.isArray(allowedRoles)) {
+    return allowedRoles.includes(userRole)
+  }
+  
+  return allowedRoles === userRole
 }
 
 export function middleware(request) {
@@ -55,7 +66,7 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (!hasRoleAccess(user.role, allowedRoles)) {
     const redirectUrl = new URL(getRedirectForRole(user.role), request.url)
     return NextResponse.redirect(redirectUrl)
   }

@@ -36,32 +36,50 @@ export function useCancelBookingMutation() {
 export function useAdminUsersQuery(params) {
   return useQuery({
     queryKey: [...queryKeys.admin.users.all, params],
-    queryFn: () => get(endpoints.admin.users.list, params),
+    queryFn: async () => {
+      try {
+        const response = await get(endpoints.admin.users.list, params)
+        // Backend returns: { success: true, message: '...', data: { results: [...], page: 1, limit: 10, filters: {...} } }
+        if (response.success && response.data) {
+          return response.data.results || []
+        } else {
+          console.error('Unexpected response format:', response)
+          return []
+        }
+      } catch (error) {
+        console.error('Error fetching admin users:', error)
+        return []
+      }
+    },
   })
 }
 
 export function useAdminUserHistoryQuery(userId, enabled = true) {
   return useQuery({
     queryKey: queryKeys.admin.users.history(userId),
-    queryFn: () => get(endpoints.admin.users.history(userId)),
+    queryFn: async () => {
+      try {
+        const response = await get(endpoints.admin.users.history(userId))
+        // Backend returns: { success: true, message: '...', data: { results: [...], page: 1, limit: 10, ... } }
+        if (response.success && response.data) {
+          return response.data.results || []
+        } else {
+          console.error('Unexpected response format:', response)
+          return []
+        }
+      } catch (error) {
+        console.error('Error fetching user booking history:', error)
+        return []
+      }
+    },
     enabled: Boolean(userId) && enabled,
   })
 }
 
-export function useBanUserMutation() {
+export function useBlockUserMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (userId) => post(endpoints.admin.users.ban(userId)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users.all })
-    },
-  })
-}
-
-export function useUnbanUserMutation() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (userId) => post(endpoints.admin.users.unban(userId)),
+    mutationFn: (userId) => post(endpoints.admin.users.block(userId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.users.all })
     },

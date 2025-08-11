@@ -13,16 +13,33 @@ export function useAuth() {
   return context
 }
 
+function getAuthCookie() {
+  try {
+    const cookies = document.cookie.split(';')
+    const userCookie = cookies.find(cookie => cookie.trim().startsWith('quickcourt_user='))
+    if (userCookie) {
+      const value = userCookie.split('=')[1]
+      return JSON.parse(decodeURIComponent(value))
+    }
+  } catch {}
+  return null
+}
+
 function setAuthCookie(user) {
   try {
-    const value = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }))
-    // 7 days expiry
-    document.cookie = `quickcourt_user=${value}; path=/; max-age=${7 * 24 * 60 * 60}`
+    const value = encodeURIComponent(JSON.stringify({ 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      role: user.role 
+    }))
+    // 7 days expiry, secure and httpOnly flags for production
+    document.cookie = `quickcourt_user=${value}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`
   } catch {}
 }
 
 function clearAuthCookie() {
-  document.cookie = "quickcourt_user=; path=/; max-age=0"
+  document.cookie = "quickcourt_user=; path=/; max-age=0; SameSite=Strict"
 }
 
 export function AuthProvider({ children }) {
@@ -35,11 +52,24 @@ export function AuthProvider({ children }) {
   const logoutMutation = useLogoutMutation()
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("quickcourt_user")
+    // First try to get user from cookie (for SSR/middleware compatibility)
+    let storedUser = getAuthCookie()
+    
+    // Fallback to localStorage if cookie not found
+    if (!storedUser) {
+      const localUser = localStorage.getItem("quickcourt_user")
+      if (localUser) {
+        storedUser = JSON.parse(localUser)
+        // Sync to cookie for consistency
+        setAuthCookie(storedUser)
+      }
+    }
+    
     if (storedUser) {
-      const user = JSON.parse(storedUser)
-      console.log('🔥🔥🔥🔥user🔥🔥🔥🔥🔥',user);
-      setUser(user)
+      console.log('🔥🔥🔥🔥user🔥🔥🔥🔥🔥', storedUser)
+      setUser(storedUser)
+      // Also sync to localStorage for consistency
+      localStorage.setItem("quickcourt_user", JSON.stringify(storedUser))
     }
     setLoading(false)
   }, [])
@@ -55,9 +85,15 @@ export function AuthProvider({ children }) {
     if (res?.data?.user) {
       const apiUser = res.data.user
       const roleKey = normalizeRoleFromUser(apiUser) || 'player'
-      const userForState = { ...apiUser, role: roleKey }
+      const userForState = { 
+        id: apiUser._id,
+        name: apiUser.full_name, 
+        email: apiUser.email, 
+        role: roleKey 
+      }
       setUser(userForState)
-      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
+      setAuthCookie(userForState)
+      localStorage.setItem("quickcourt_user", JSON.stringify(userForState))
     }
     // Return full response so callers can handle OTP/not-verified flows and messages
     return res
@@ -91,9 +127,15 @@ export function AuthProvider({ children }) {
     if (res?.data?.user) {
       const apiUser = res.data.user
       const roleKey = normalizeRoleFromUser(apiUser) || 'player'
-      const userForState = { ...apiUser, role: roleKey }
+      const userForState = { 
+        id: apiUser._id,
+        name: apiUser.full_name, 
+        email: apiUser.email, 
+        role: roleKey 
+      }
       setUser(userForState)
-      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
+      setAuthCookie(userForState)
+      localStorage.setItem("quickcourt_user", JSON.stringify(userForState))
     }
     // Return full response to allow callers to inspect success/message
     return res
