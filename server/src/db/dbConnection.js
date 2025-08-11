@@ -8,6 +8,7 @@ const connectDB = async () => {
             useNewUrlParser: true,
             autoIndex: true,
             useUnifiedTopology: true,
+            
         });
         console.log(successColor, '✅ Database Connected successfully...');
     } catch (error) {
