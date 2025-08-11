@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAdminPendingFacilitiesQuery, useAdminApprovedFacilitiesQuery, useAdminRejectedFacilitiesQuery, useApproveFacilityMutation, useRejectFacilityMutation } from "@/actions/facilities"
 import { Search, Filter, Eye, Check, X, MapPin, Calendar, Phone, Mail, Building } from "lucide-react"
 
 export default function AdminFacilitiesPage() {
@@ -8,116 +9,24 @@ export default function AdminFacilitiesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFacility, setSelectedFacility] = useState(null)
 
-  const pendingFacilities = [
-    {
-      id: 1,
-      name: "Elite Sports Complex",
-      owner: "Rajesh Kumar",
-      email: "rajesh@example.com",
-      phone: "+91 9876543210",
-      location: "Indiranagar, Bangalore",
-      address: "123 Sports Street, Indiranagar, Bangalore - 560038",
-      sports: ["Tennis", "Badminton"],
-      courts: 8,
-      amenities: ["Parking", "Changing Room", "Cafeteria", "AC"],
-      submittedDate: "2024-01-15",
-      documents: ["License", "Insurance", "Photos"],
-      description: "Premium sports facility with modern amenities and professional courts.",
-      images: ["/vibrant-sports-arena.png", "/indoor-badminton-court.png"],
-    },
-    {
-      id: 2,
-      name: "Victory Grounds",
-      owner: "Priya Sharma",
-      email: "priya@example.com",
-      phone: "+91 9876543211",
-      location: "HSR Layout, Bangalore",
-      address: "456 Victory Road, HSR Layout, Bangalore - 560102",
-      sports: ["Football", "Cricket"],
-      courts: 3,
-      amenities: ["Floodlights", "Parking", "Changing Room"],
-      submittedDate: "2024-01-14",
-      documents: ["License", "Insurance", "Photos"],
-      description: "Large outdoor grounds perfect for team sports with floodlight facilities.",
-      images: ["/cricket-ground.png", "/outdoor-basketball-court.png"],
-    },
-    {
-      id: 3,
-      name: "Power Play Arena",
-      owner: "Amit Patel",
-      email: "amit@example.com",
-      phone: "+91 9876543212",
-      location: "Electronic City, Bangalore",
-      address: "789 Tech Park Road, Electronic City, Bangalore - 560100",
-      sports: ["Basketball", "Volleyball"],
-      courts: 4,
-      amenities: ["AC", "Parking", "Snacks", "Water"],
-      submittedDate: "2024-01-13",
-      documents: ["License", "Insurance", "Photos"],
-      description: "Modern indoor facility with air conditioning and professional equipment.",
-      images: ["/outdoor-basketball-court.png", "/sports-facility-reception.png"],
-    },
-  ]
+  const { data: pendingFacilities = [] } = useAdminPendingFacilitiesQuery()
 
-  const approvedFacilities = [
-    {
-      id: 4,
-      name: "SportZone Arena",
-      owner: "Sneha Reddy",
-      email: "sneha@example.com",
-      phone: "+91 9876543213",
-      location: "Koramangala, Bangalore",
-      sports: ["Badminton", "Tennis"],
-      courts: 6,
-      approvedDate: "2024-01-10",
-      status: "Active",
-      totalBookings: 245,
-      monthlyRevenue: "₹45,600",
-      rating: 4.8,
-    },
-    {
-      id: 5,
-      name: "Champions Court",
-      owner: "Kiran Kumar",
-      email: "kiran@example.com",
-      phone: "+91 9876543214",
-      location: "Whitefield, Bangalore",
-      sports: ["Badminton", "Table Tennis"],
-      courts: 4,
-      approvedDate: "2024-01-08",
-      status: "Active",
-      totalBookings: 189,
-      monthlyRevenue: "₹32,400",
-      rating: 4.7,
-    },
-  ]
+  const { data: approvedFacilities = [] } = useAdminApprovedFacilitiesQuery()
 
-  const rejectedFacilities = [
-    {
-      id: 6,
-      name: "Basic Sports Center",
-      owner: "Ravi Kumar",
-      email: "ravi@example.com",
-      phone: "+91 9876543215",
-      location: "Marathahalli, Bangalore",
-      sports: ["Badminton"],
-      courts: 2,
-      rejectedDate: "2024-01-12",
-      rejectionReason: "Insufficient documentation and safety concerns. Missing fire safety certificate.",
-    },
-  ]
+  const { data: rejectedFacilities = [] } = useAdminRejectedFacilitiesQuery()
 
-  const handleApprove = (facilityId) => {
-    if (confirm("Are you sure you want to approve this facility?")) {
-      alert(`Facility ${facilityId} has been approved! Owner will be notified via email.`)
-    }
+  const approveMutation = useApproveFacilityMutation()
+  const rejectMutation = useRejectFacilityMutation()
+  const handleApprove = async (facilityId) => {
+    const ok = confirm("Approve this facility?")
+    if (!ok) return
+    await approveMutation.mutateAsync({ id: facilityId, comment: '' })
   }
 
-  const handleReject = (facilityId) => {
+  const handleReject = async (facilityId) => {
     const reason = prompt("Please provide a reason for rejection:")
-    if (reason) {
-      alert(`Facility ${facilityId} has been rejected. Reason: ${reason}`)
-    }
+    if (!reason) return
+    await rejectMutation.mutateAsync({ id: facilityId, reason })
   }
 
   const getCurrentFacilities = () => {

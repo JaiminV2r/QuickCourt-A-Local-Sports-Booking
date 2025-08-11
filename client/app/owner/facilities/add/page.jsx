@@ -3,6 +3,8 @@
 import Layout from "../../../../components/layout"
 import ProtectedRoute from "../../../../components/protected-route"
 import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Plus, X, MapPin, Clock, DollarSign, Users } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -16,6 +18,7 @@ export default function AddFacilityPage() {
   const searchParams = useSearchParams()
   const editId = searchParams.get("id")
   const isEditMode = Boolean(editId)
+  const router = useRouter()
 
   const initialValues = {
     name: "",

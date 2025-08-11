@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
+import { useLoginMutation, useRegisterMutation, useVerifyOtpMutation, useLogoutMutation } from "../actions/auth"
 
 const AuthContext = createContext()
 
@@ -28,80 +29,75 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const loginMutation = useLoginMutation()
+  const registerMutation = useRegisterMutation()
+  const verifyOtpMutation = useVerifyOtpMutation()
+  const logoutMutation = useLogoutMutation()
+
   useEffect(() => {
-    // Check for stored user data
     const storedUser = localStorage.getItem("quickcourt_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
+    if (storedUser) setUser(JSON.parse(storedUser))
     setLoading(false)
   }, [])
 
+  function normalizeRoleFromUser(apiUser) {
+    const apiRole = apiUser?.role
+    if (!apiRole) return null
+    const base = typeof apiRole === 'object' ? (apiRole?.slug || apiRole?.role || '') : (apiRole || '')
+    const s = base.toString().toLowerCase()
+    if (s.includes('admin')) return 'admin'
+    if (s.includes('owner') || s.includes('facility')) return 'owner'
+    return 'player'
+  }
+
   const login = async (email, password) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock user data based on email
-    let userData
-    if (email.includes("admin")) {
-      userData = {
-        id: 1,
-        name: "Admin User",
-        email,
-        role: "admin",
-        phone: "+91 9876543210",
-      }
-    } else if (email.includes("owner")) {
-      userData = {
-        id: 2,
-        name: "Facility Owner",
-        email,
-        role: "owner",
-        phone: "+91 9876543211",
-        facilityId: "FAC001",
-      }
-    } else {
-      userData = {
-        id: 3,
-        name: "John Doe",
-        email,
-        role: "player",
-        phone: "+91 9876543212",
-      }
+    const res = await loginMutation.mutateAsync({ email, password })
+    if (res?.data?.user) {
+      const apiUser = res.data.user
+      const roleKey = normalizeRoleFromUser(apiUser) || 'player'
+      const userForState = { ...apiUser, role: roleKey }
+      setUser(userForState)
+      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
+      return userForState
     }
-
-    setUser(userData)
-    localStorage.setItem("quickcourt_user", JSON.stringify(userData))
-    setAuthCookie(userData)
-    return userData
+    // When email not verified, server responds with success true and message, but no data.user
+    return null
   }
 
-  const signup = async (userData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+  const signup = async (payload) => {
+    // payload: { full_name, email, password, role }
+    return registerMutation.mutateAsync(payload)
+  }
 
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      role: userData.role || "player",
+  const logout = async () => {
+    try {
+      const stored = localStorage.getItem('quickcourt_auth')
+      const parsed = stored ? JSON.parse(stored) : null
+      const refreshToken = parsed?.tokens?.refresh?.token
+      if (refreshToken) {
+        await logoutMutation.mutateAsync({ refresh_token: refreshToken })
+      }
+    } catch {
+      // ignore errors on logout
+    } finally {
+      setUser(null)
+      localStorage.removeItem('quickcourt_user')
+      localStorage.removeItem('quickcourt_auth')
+      clearAuthCookie()
     }
-
-    setUser(newUser)
-    localStorage.setItem("quickcourt_user", JSON.stringify(newUser))
-    setAuthCookie(newUser)
-    return newUser
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("quickcourt_user")
-    clearAuthCookie()
-  }
-
-  const verifyOTP = async (otp) => {
-    // Simulate OTP verification
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return otp === "123456" // Mock OTP
+  const verifyOTP = async ({ email, otp }) => {
+    const res = await verifyOtpMutation.mutateAsync({ email, otp })
+    if (res?.data?.user) {
+      const apiUser = res.data.user
+      const roleKey = normalizeRoleFromUser(apiUser) || 'player'
+      const userForState = { ...apiUser, role: roleKey }
+      setUser(userForState)
+      setAuthCookie({ id: apiUser._id, name: apiUser.full_name, email: apiUser.email, role: roleKey })
+      return true
+    }
+    return false
   }
 
   const value = {

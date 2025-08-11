@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "../contexts/auth-context"
 import {
@@ -8,6 +9,16 @@ import {
   Users, Building, FileText, Shield, Settings,
 } from "lucide-react"
 import ProtectedRoute from "./protected-route"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog"
 
 export default function Layout({ children, allowedRoles }) {
   if (allowedRoles) {
@@ -67,8 +78,8 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                     <User className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                    <div className="text-gray-500 capitalize">{user.role}</div>
+                    <div className="font-medium text-gray-900">{user.full_name}</div>
+                    <div className="text-gray-500">{user.email}</div>
                   </div>
                 </div>
                 <button
@@ -135,8 +146,8 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                       <User className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="text-sm">
-                      <div className="font-medium text-gray-900">{user.name}</div>
-                      <div className="text-gray-500 capitalize">{user.role}</div>
+                      <div className="font-medium text-gray-900">{user.full_name}</div>
+                      <div className="text-gray-500 ">{user.email}</div>
                     </div>
                   </div>
                   <button
@@ -225,7 +236,9 @@ function Footer() {
 
 function LayoutInner({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
   const { user, logout } = useAuth()
+  const router = useRouter()
 
   const getNavItems = () => {
     if (!user) {
@@ -265,9 +278,17 @@ function LayoutInner({ children }) {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    window.location.href = "/auth/login"
+  const handleLogoutClick = () => {
+    setIsLogoutDialogOpen(true)
+  }
+
+  const confirmLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      setIsLogoutDialogOpen(false)
+      router.replace("/auth/login")
+    }
   }
 
   // Always render header/footer — regardless of auth
@@ -275,11 +296,25 @@ function LayoutInner({ children }) {
     <div className="min-h-screen bg-gray-50">
       <Header
         user={user}
-        onLogout={handleLogout}
+        onLogout={handleLogoutClick}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         getNavItems={getNavItems}
       />
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be signed out of your account on this device.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout}>Log out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Main>{children}</Main>
       <Footer />
     </div>

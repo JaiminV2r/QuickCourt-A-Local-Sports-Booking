@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Layout from "../../../../components/layout"
 import ProtectedRoute from "../../../../components/protected-route"
 import { CreditCard, ArrowLeft, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import { useFacilityQuery } from "../../../../actions/facilities"
+import { useCreateBookingMutation } from "../../../../actions/bookings"
+import { useSearchParams } from "next/navigation"
 
 export default function BookingPage({ params }) {
   const [selectedDate, setSelectedDate] = useState("")
@@ -14,30 +17,24 @@ export default function BookingPage({ params }) {
   const [duration, setDuration] = useState(1)
   const [playerCount, setPlayerCount] = useState(2)
   const [step, setStep] = useState(1) // 1: Select, 2: Confirm, 3: Payment, 4: Success
+  const searchParams = useSearchParams()
+  const preselectSport = searchParams.get('sport')
 
-  // Mock venue data
-  const venue = {
-    id: params?.id || 1,
-    name: "SportZone Arena",
-    location: "Koramangala, Bangalore",
-    sports: [
-      {
-        name: "Badminton",
-        courts: [
-          { id: "B1", name: "Badminton Court 1", price: 500, peakPrice: 600 },
-          { id: "B2", name: "Badminton Court 2", price: 500, peakPrice: 600 },
-          { id: "B3", name: "Badminton Court 3", price: 600, peakPrice: 700 },
-        ],
-      },
-      {
-        name: "Tennis",
-        courts: [
-          { id: "T1", name: "Tennis Court 1", price: 800, peakPrice: 1000 },
-          { id: "T2", name: "Tennis Court 2", price: 800, peakPrice: 1000 },
-        ],
-      },
-    ],
-  }
+  const id = Number(params?.id)
+  const { data: venue } = useFacilityQuery(id)
+  const { mutateAsync: createBooking } = useCreateBookingMutation()
+
+  const sports = useMemo(() => venue?.sports || [], [venue])
+  const defaultSportName = useMemo(() => {
+    if (!preselectSport) return ''
+    const byParam = sports.find((s) => s.name.toLowerCase() === preselectSport)
+    return byParam?.name || ''
+  }, [sports, preselectSport])
+  
+  // initialize from query param once
+  useMemo(() => {
+    if (defaultSportName) setSelectedSport(defaultSportName)
+  }, [defaultSportName])
 
   const timeSlots = [
     { time: "06:00", isPeak: false, available: true },
@@ -75,8 +72,8 @@ export default function BookingPage({ params }) {
   }
 
   const getSelectedCourt = () => {
-    const sport = venue.sports.find((s) => s.name === selectedSport)
-    return sport?.courts.find((c) => c.id === selectedCourt)
+    const sport = sports.find((s) => s.name === selectedSport)
+    return sport?.courts?.find((c) => c.id === selectedCourt)
   }
 
   const getSelectedTimeSlot = () => {
@@ -111,8 +108,26 @@ export default function BookingPage({ params }) {
     })
   }
 
-  const handleBooking = () => {
-    setStep(4)
+  const handleBooking = async () => {
+    const court = getSelectedCourt()
+    const timeSlot = getSelectedTimeSlot()
+    if (!venue || !court || !timeSlot) return
+    const payload = {
+      venueId: venue.id,
+      sport: selectedSport,
+      courtId: selectedCourt,
+      date: selectedDate,
+      startTime: selectedTime,
+      durationHours: duration,
+      players: playerCount,
+      amount: calculateTotal().total,
+    }
+    try {
+      await createBooking(payload)
+      setStep(4)
+    } catch (e) {
+      alert('Failed to create booking')
+    }
   }
 
   const resetBooking = () => {
@@ -130,7 +145,7 @@ export default function BookingPage({ params }) {
           {/* Header */}
           <div className="mb-6 md:mb-8">
             <Link
-              href={`/venues/${venue.id}`}
+              href={`/venues/${venue?.id}`}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -138,7 +153,7 @@ export default function BookingPage({ params }) {
             </Link>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Book Court</h1>
             <p className="text-gray-600">
-              {venue.name} - {venue.location}
+              {venue?.name} - {venue?.location}
             </p>
           </div>
 
@@ -179,7 +194,7 @@ export default function BookingPage({ params }) {
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3">Select Sport</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {venue.sports.map((sport) => (
+                  {sports.map((sport) => (
                     <button
                       key={sport.name}
                       onClick={() => {
@@ -193,7 +208,7 @@ export default function BookingPage({ params }) {
                       }`}
                     >
                       <h3 className="font-semibold">{sport.name}</h3>
-                      <p className="text-sm text-gray-600">{sport.courts.length} courts available</p>
+                      <p className="text-sm text-gray-600">{sport.courts?.length ?? 0} courts available</p>
                     </button>
                   ))}
                 </div>
@@ -204,9 +219,9 @@ export default function BookingPage({ params }) {
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Select Court</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {venue.sports
+                    {sports
                       .find((s) => s.name === selectedSport)
-                      ?.courts.map((court) => (
+                      ?.courts?.map((court) => (
                         <button
                           key={court.id}
                           onClick={() => setSelectedCourt(court.id)}
@@ -523,7 +538,7 @@ export default function BookingPage({ params }) {
                     <h4 className="font-semibold text-blue-900 mb-2">Booking Details</h4>
                     <div className="text-sm text-blue-800 space-y-1">
                       <p>
-                        <strong>Venue:</strong> {venue.name}
+                        <strong>Venue:</strong> {venue?.name}
                       </p>
                       <p>
                         <strong>Court:</strong> {getSelectedCourt()?.name}

@@ -2,23 +2,25 @@
 
 import { useAuth } from "../contexts/auth-context"
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = "/"
+      router.replace("/")
     }
 
     if (!loading && user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
       // Redirect to appropriate dashboard based on role
       if (user.role === "admin") {
-        window.location.href = "/admin"
+        router.replace("/admin")
       } else if (user.role === "owner") {
-        window.location.href = "/owner"
+        router.replace("/owner")
       } else {
-        window.location.href = "/"
+        router.replace("/")
       }
     }
   }, [user, loading, allowedRoles])

@@ -25,7 +25,7 @@ export default function TextField({ label, leftIcon: LeftIcon, rightIcon, type =
         />
         {rightIcon}
       </div>
-      {hasError && <p className="mt-2 text-sm text-red-600">{meta.error}</p>}
+      {hasError && <p className="text-sm text-red-600">{meta.error}</p>}
     </div>
   )
 }
