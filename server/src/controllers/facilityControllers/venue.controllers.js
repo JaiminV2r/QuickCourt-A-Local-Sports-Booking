@@ -73,6 +73,7 @@ module.exports = {
         venue.amenities = req.body.amenities || venue.amenities;
         venue.about = req.body.about || venue.about;
         venue.venue_type = req.body.venue_type || venue.venue_type;
+        venue.venue_status = VENUE_STATUS.PENDING;
         venue.starting_price_per_hour =
             req.body.starting_price_per_hour || venue.starting_price_per_hour;
             venue.phone = req.body.phone || venue.phone;
