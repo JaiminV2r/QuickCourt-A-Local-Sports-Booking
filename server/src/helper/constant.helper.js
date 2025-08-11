@@ -8,7 +8,7 @@ module.exports = {
 
     ROLES: {
         admin: 'Admin',
-        user: 'User',
+        player: 'Player',
         facility_owner: 'Facility Owner',
     },
 

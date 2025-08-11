@@ -47,7 +47,7 @@ router.put('/reset-password', validate(authValidation.resetPassword), authContro
  */
 router.put(
     '/change-password',
-    auth(ROLES.user, ROLES.admin),
+    auth(ROLES.player, ROLES.admin),
     validate(authValidation.changePassword),
     authController.changePassword
 );

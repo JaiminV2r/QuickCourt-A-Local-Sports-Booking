@@ -8,3 +8,4 @@ module.exports.CourtBlock = require('./courtBlock.model');
 module.exports.Booking = require('./booking.model');    
 module.exports.Review = require('./review.model');
 module.exports.Sport = require('./sport.model');
+module.exports.Otp = require('./otp.model');
