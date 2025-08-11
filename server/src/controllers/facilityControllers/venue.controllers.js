@@ -227,14 +227,13 @@ module.exports = {
   // Update court details
   updateCourtInVenue: catchAsync(async (req, res) => {
     const { court_id, } = req.params;
-    const { court_name, court_type, price_per_hour, operating_hours } = req.body;
+    const { court_name, court_type, operating_hours } = req.body;
 
     const updateCourt = await Court.updateOne(
       { _id: court_id },
       {
         court_name,
         court_type,
-        price_per_hour,
         operating_hours
       }
     );
