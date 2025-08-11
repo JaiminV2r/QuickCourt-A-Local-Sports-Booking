@@ -42,12 +42,21 @@ const renderTemplate = (templateName, variables) => {
 // The function will render the EJS template with the provided data and send the email.
 const sendTemplateEmail = async ({ to, subject, template, data }) => {
     try {
-        const html = await renderTemplate(template, {
+        let templateData = {
             fullName: first(data.full_name),
             email: data.email,
-            otp: data.otp,
             imageUrl: `${process.env.BASE_URL}${FILES_FOLDER.default}/logo.jpeg`,
-        });
+        };
+
+        // Add template-specific data
+        if (data.otp) {
+            templateData.otp = data.otp;
+        }
+        if (data.reset_link) {
+            templateData.reset_link = data.reset_link;
+        }
+
+        const html = await renderTemplate(template, templateData);
 
         await transport.sendMail({
             from: config.email.smtp.auth.user,

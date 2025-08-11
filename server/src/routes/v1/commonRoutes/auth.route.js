@@ -33,6 +33,15 @@ router.post('/logout', validate(authValidation.logout), authController.logout);
 router.post('/send-otp', validate(authValidation.sendOtp), authController.sendOtp);
 
 /**
+ * Forgot password.
+ */
+router.post(
+    '/forgot-password',
+    validate(authValidation.forgotPassword),
+    authController.forgotPassword
+);
+
+/**
  * Social login.
  */
 router.post('/social-login', validate(authValidation.socialLogin), authController.socialLogin);
@@ -51,5 +60,10 @@ router.put(
     validate(authValidation.changePassword),
     authController.changePassword
 );
+
+/**
+ * Get roles list (excluding Admin).
+ */
+router.get('/roles', authController.getRoles);
 
 module.exports = router;

@@ -33,10 +33,12 @@ exports.update = async (filter, update, options = {}) => {
 /**
  * Get user by filter.
  * @param {Object} filter
+ * @param {Object} projection
+ * @param {import('mongoose').QueryOptions} options
  * @returns {Promise<User>}
  */
-exports.get = async (filter) => {
-    return User.findOne(filter);
+exports.get = async (filter, projection = {}, options = {}) => {
+    return User.findOne(filter, projection, options);
 };
 /**
  * Get users by filter.

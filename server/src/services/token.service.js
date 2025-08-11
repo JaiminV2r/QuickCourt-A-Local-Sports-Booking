@@ -121,10 +121,49 @@ const saveToken = async (token, userId, expires, type, blacklisted = false) => {
 
 // OTP generation is moved to otp.service using dedicated Otp model
 
+/**
+ * Generate reset password token
+ * @param {string} userId
+ * @returns {Promise<string>}
+ */
+const generateResetPasswordToken = async (userId) => {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expires = moment().add(30, 'minutes'); // 30 minutes expiry
+
+    await saveToken(token, userId, expires, TOKEN_TYPES.resetPassword);
+
+    return token;
+};
+
+/**
+ * Verify reset password token
+ * @param {string} token
+ * @returns {Promise<Object|null>}
+ */
+const verifyResetPasswordToken = async (token) => {
+    const tokenData = await get({
+        token,
+        type: TOKEN_TYPES.resetPassword,
+        blacklisted: false,
+    });
+
+    if (!tokenData) {
+        return null;
+    }
+
+    if (tokenData.expires <= new Date()) {
+        return null;
+    }
+
+    return tokenData;
+};
+
 module.exports = {
     generateToken,
     generateAuthTokens,
     saveToken,
+    generateResetPasswordToken,
+    verifyResetPasswordToken,
     create,
     update,
     get,

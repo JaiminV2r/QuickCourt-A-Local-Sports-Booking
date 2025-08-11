@@ -56,13 +56,21 @@ module.exports = {
     },
 
     /**
+     * Forgot password.
+     */
+    forgotPassword: {
+        body: Joi.object().keys({
+            email: Joi.string().trim().email().required(),
+        }),
+    },
+
+    /**
      * Reset password.
      */
     resetPassword: {
         body: Joi.object().keys({
-            email: Joi.string().email().required(),
+            token: Joi.string().trim().required(),
             password: Joi.string().custom(password).required(),
-            otp: Joi.string().trim().min(4).max(4).required(),
         }),
     },
 

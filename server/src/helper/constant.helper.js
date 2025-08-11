@@ -16,6 +16,7 @@ module.exports = {
         access: 'Access',
         refresh: 'Refresh',
         verifyOtp: 'VerifyOtp',
+        resetPassword: 'ResetPassword',
     },
 
     SOCIAL_TYPES: {
