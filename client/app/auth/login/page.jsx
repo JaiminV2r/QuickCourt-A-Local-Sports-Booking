@@ -4,35 +4,22 @@ import { useState } from "react"
 import { useAuth } from "../../../contexts/auth-context"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
+import { Formik, Form } from "formik"
+import TextField from "../../../components/formik/TextField"
+import { loginSchema } from "../../../validation/schemas"
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   const { login } = useAuth()
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (values) => {
     setLoading(true)
     setError("")
-
     try {
-      const user = await login(formData.email, formData.password)
-
-      // Redirect based on role
+      const user = await login(values.email, values.password)
       if (user.role === "admin") {
         window.location.href = "/admin"
       } else if (user.role === "owner") {
@@ -61,7 +48,9 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <Formik initialValues={{ email: "", password: "" }} validationSchema={loginSchema} onSubmit={handleSubmit}>
+            {() => (
+              <Form className="space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center">
                 <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
@@ -69,52 +58,24 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
+                <TextField name="email" type="email" label="Email Address" leftIcon={Mail} placeholder="Enter your email" />
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
+                <TextField
                   name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
+                  type={showPassword ? "text" : "password"}
+                  label="Password"
+                  leftIcon={Lock}
                   placeholder="Enter your password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  rightIcon={(
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
                   )}
-                </button>
-              </div>
-            </div>
+                />
 
             <div className="flex items-center justify-between">
               <label className="flex items-center">
@@ -143,7 +104,9 @@ export default function LoginPage() {
                 </>
               )}
             </button>
-          </form>
+              </Form>
+            )}
+          </Formik>
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
