@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Layout from "../../components/layout"
-import ProtectedRoute from "../../components/protected-route"
 import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Camera, Trophy, Target, Clock, Star } from "lucide-react"
 
 export default function ProfilePage() {
@@ -94,9 +92,8 @@ export default function ProfilePage() {
   ]
 
   return (
-    <ProtectedRoute allowedRoles={["player"]}>
-      <Layout>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -245,24 +242,6 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
                           <Mail className="w-4 h-4 text-gray-400" />
                           <span>{formData.email}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                      {isEditing ? (
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{formData.phone}</span>
                         </div>
                       )}
                     </div>
@@ -512,7 +491,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </Layout>
-    </ProtectedRoute>
+    </>
   )
 }

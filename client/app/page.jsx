@@ -1,8 +1,6 @@
 "use client"
 
 import { useAuth } from "../contexts/auth-context"
-import Layout from "../components/layout"
-// Removed: ProtectedRoute
 import { Search, MapPin, Star, Users, ChevronRight, Calendar, Clock } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -77,13 +75,13 @@ export default function HomePage() {
   ]
 
   return (
-    <Layout>
+    <>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold mb-4">Hi {greetingName}! 👋</h1>
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">Hi {user?.name?.split(" ")[0]}! 👋</h1>
             <h2 className="text-xl md:text-3xl font-semibold mb-6">Ready to play your favorite sport?</h2>
             <p className="text-lg md:text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
               Find and book local sports facilities in your area with just a few taps
@@ -292,6 +290,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </Layout>
+    </>
   )
 }

@@ -1,3 +1,4 @@
+import Layout from "../components/layout"
 import { AuthProvider } from "../contexts/auth-context"
 import QueryProvider from "../contexts/query-provider"
 import "./globals.css"
@@ -12,7 +13,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <Layout>{children}</Layout>
+          </QueryProvider>
         </AuthProvider>
       </body>
     </html>

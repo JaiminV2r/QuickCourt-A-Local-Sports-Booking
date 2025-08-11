@@ -126,8 +126,6 @@ export default function BookingPage({ params }) {
   }
 
   return (
-    <ProtectedRoute allowedRoles={["player"]}>
-      <Layout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
@@ -408,14 +406,6 @@ export default function BookingPage({ params }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                      <input
-                        type="tel"
-                        defaultValue="+91 9876543210"
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Special Requirements</label>
                       <textarea
                         rows={3}
@@ -627,7 +617,5 @@ export default function BookingPage({ params }) {
             </div>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
   )
 }

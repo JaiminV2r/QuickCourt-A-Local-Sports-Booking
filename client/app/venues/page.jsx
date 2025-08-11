@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Layout from "../../components/layout"
-import ProtectedRoute from "../../components/protected-route"
 import { Search, MapPin, Star, ChevronDown, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
 
@@ -144,9 +142,8 @@ export default function VenuesPage() {
   const paginatedVenues = filteredVenues.slice(startIndex, startIndex + venuesPerPage)
 
   return (
-    <ProtectedRoute allowedRoles={["player"]}>
-      <Layout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">Sports Venues</h1>
@@ -472,7 +469,6 @@ export default function VenuesPage() {
             </div>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
+    </>
   )
 }
