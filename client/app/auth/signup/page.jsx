@@ -181,24 +181,6 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Phone Number</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500"
-                    placeholder="+91 9876543210"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Account Type</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
