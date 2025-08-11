@@ -98,9 +98,7 @@ userSchema.pre('save', async function (next) {
 userSchema.post('findOne', async (data, next) => {
     if (data) {
         if (data?.avatar) {
-            data.avatar = `${process.env.BASE_URL}/${FILES_FOLDER.userImages}/${String(data._id)}/${
-                data.avatar
-            }`;
+            data.avatar = `${process.env.BASE_URL}/${FILES_FOLDER.userImages}/${data.avatar}`;
         } else if (data?.avatar === null) {
             data.avatar = `${process.env.BASE_URL}/${FILES_FOLDER.default}/user_image.jpg`;
         }
