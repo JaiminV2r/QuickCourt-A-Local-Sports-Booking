@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = "/auth/login"
+      window.location.href = "/"
     }
 
     if (!loading && user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
