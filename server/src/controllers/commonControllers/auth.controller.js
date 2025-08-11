@@ -1,9 +1,15 @@
 const httpStatus = require('http-status');
-const { userService, tokenService, emailService, roleService } = require('../../services');
+const {
+    userService,
+    tokenService,
+    emailService,
+    roleService,
+    otpService,
+} = require('../../services');
 const ApiError = require('../../utils/apiError');
 const catchAsync = require('../../utils/catchAsync');
 const bcrypt = require('bcryptjs');
-const { TOKEN_TYPES, ROLES } = require('../../helper/constant.helper');
+const { TOKEN_TYPES, ROLES, FILES_FOLDER } = require('../../helper/constant.helper');
 /**
  * All user controllers are exported from here 👇
  */
@@ -13,29 +19,33 @@ module.exports = {
      */
     register: catchAsync(async (req, res) => {
         const { body } = req;
-        const userRoleId = await roleService.getRoleByName(ROLES.user); // Get user role ID.
-        const emailExist = await userService.get({ email: body.email, deleted_at: null }); // Get user by email.
+        const emailExist = await userService.get({
+            email: body.email,
+            role: body.role,
+            deleted_at: null,
+        }); // Get user by email.
         if (emailExist) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken'); // If email already exist, throw an error.
+            throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken with this role'); // If email already exist, throw an error.
         }
 
-        const user = await userService.create({ ...body, role: userRoleId._id }); // User create.
-
-        const otp = await tokenService.generateOtpToken(user); // Generate OTP.
+        const user = await userService.create({ ...body }); // User create.
+        const { otp } = await otpService.createOrReplace(user._id); // Generate and store OTP.
 
         const mailSent = await emailService.sendTemplateEmail({
             to: body.email,
             subject: 'Register!',
             template: 'otpEmailTemplate', // ✅ Dynamic template name
             data: {
-                ...body,
+                full_name: body.full_name,
+                email: body.email,
                 otp,
+                imageUrl: `${process.env.BASE_URL}/${FILES_FOLDER.default}/user_image.jpg`,
             },
         });
 
         if (!mailSent) {
             await userService.delete(user._id); // Delete user.
-            await tokenService.deleteOne({ user: user._id }); // Delete token.
+            await otpService.deleteByUser(user._id); // Delete OTPs.
             throw new ApiError(httpStatus.BAD_REQUEST, 'Something went wrong'); // If mail doesn't send, throw an error.
         }
 
@@ -61,21 +71,11 @@ module.exports = {
             throw new ApiError(httpStatus.UNAUTHORIZED, 'Account blocked'); // If the user is blocked, throw an error.
         }
 
-        let token = await tokenService.get({
-            type: TOKEN_TYPES.verifyOtp,
-            user: emailExist._id,
-        });
-
-        if (!token) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'Something went wrong'); // If token doesn't exist, throw an error.
-        }
-
-        if (token.token !== otp) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid'); // If otp doesn't match, throw an error.
-        }
-
-        if (token.expires <= new Date()) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP expired'); // If otp expired, throw an error.
+        const verify = await otpService.verifyAndConsume(emailExist._id, otp);
+        if (!verify.ok) {
+            if (verify.reason === 'expired')
+                throw new ApiError(httpStatus.BAD_REQUEST, 'OTP expired');
+            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid');
         }
 
         if (!emailExist.is_email_verified) {
@@ -115,7 +115,7 @@ module.exports = {
         }
 
         if (!emailExist.is_email_verified) {
-            const otp = await tokenService.generateOtpToken(emailExist); // Generate OTP.
+            const { otp } = await otpService.createOrReplace(emailExist._id); // Generate and store OTP.
 
             const mailSent = await emailService.sendTemplateEmail({
                 to: body.email,
@@ -183,7 +183,7 @@ module.exports = {
             throw new ApiError(httpStatus.UNAUTHORIZED, 'Account blocked'); // If the user is blocked, throw an error.
         }
 
-        const otp = await tokenService.generateOtpToken(emailExist); // Generate otp.
+        const { otp } = await otpService.createOrReplace(emailExist._id); // Generate and store OTP.
 
         const mailSent = await emailService.sendTemplateEmail({
             to: body.email,
@@ -210,7 +210,7 @@ module.exports = {
      */
     socialLogin: catchAsync(async (req, res) => {
         const { body } = req;
-        const userRole = await roleService.getRoleByName(ROLES.user); // Get user role ID.
+        const userRole = await roleService.getRoleByName(ROLES.player); // Get user role ID.
         let user = await userService.get({ email: body.email, deleted_at: null }); // Get user by email.
 
         user = !user
@@ -255,17 +255,11 @@ module.exports = {
             throw new ApiError(httpStatus.UNAUTHORIZED, 'Your account is blocked by admin.'); // If the user is blocked, throw an error.
         }
 
-        let token = await tokenService.get({
-            type: TOKEN_TYPES.verifyOtp,
-            user: emailExist._id,
-        }); // Get token by type and user.
-
-        if (!token) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'Something went wrong'); // If token doesn't exist, throw an error.
-        }
-
-        if (token.token !== body.otp) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid'); // If otp doesn't match, throw an error.
+        const check = await otpService.verifyAndConsume(emailExist._id, body.otp);
+        if (!check.ok) {
+            if (check.reason === 'expired')
+                throw new ApiError(httpStatus.BAD_REQUEST, 'OTP expired');
+            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid');
         }
 
         const bcryptPassword = await bcrypt.hash(body.password, 8); // New password bcrypt.

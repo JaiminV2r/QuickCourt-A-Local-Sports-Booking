@@ -11,14 +11,14 @@ const router = express.Router();
 /**
  * Get user.
  */
-router.get('/get', auth(ROLES.user), userController.getUser);
+router.get('/get', auth(ROLES.player), userController.getUser);
 
 /**
  * Update user.
  */
 router.put(
     '/update',
-    auth(ROLES.user),
+    auth(ROLES.player),
     fileUpload.single('user_image'),
     fileValidation('single', { size: 1000000, ext: ['jpg', 'jpeg', 'png', 'tiff', 'heic'] }),
     validate(userValidation.updateUser),

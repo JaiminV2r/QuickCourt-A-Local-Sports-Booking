@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { password } = require('./custom.validation');
+const { password, objectId } = require('./custom.validation');
 
 /**
  * All auth validations are exported from here 👇
@@ -13,6 +13,7 @@ module.exports = {
             full_name: Joi.string().trim().max(50).required(),
             email: Joi.string().trim().email().required(),
             password: Joi.string().trim().custom(password).required(),
+            role: Joi.string().custom(objectId).required(),
         }),
     },
 
@@ -21,8 +22,8 @@ module.exports = {
      */
     verifyOtp: {
         body: Joi.object().keys({
-            email: Joi.string().email().required(),
-            otp: Joi.string().trim().min(4).max(4).required(),
+            email: Joi.string().trim().email().required(),
+            otp: Joi.string().trim().length(6).required(),
         }),
     },
 
@@ -50,7 +51,7 @@ module.exports = {
      */
     sendOtp: {
         body: Joi.object().keys({
-            email: Joi.string().email().required(),
+            email: Joi.string().trim().email().required(),
         }),
     },
 

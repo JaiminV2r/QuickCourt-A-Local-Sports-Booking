@@ -8,7 +8,7 @@ let userRoleId, adminRoleId;
  * This IIFE function must be called after the role seeder has run.
  */
 (async () => {
-    userRoleId = (await getRoleByName(ROLES.user))._id;
+    userRoleId = (await getRoleByName(ROLES.player))._id;
     adminRoleId = (await getRoleByName(ROLES.admin))._id;
 })();
 

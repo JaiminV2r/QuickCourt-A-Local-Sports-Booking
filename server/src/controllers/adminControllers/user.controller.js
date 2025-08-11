@@ -15,7 +15,7 @@ module.exports = {
      */
     getAllUser: catchAsync(async (req, res) => {
         let { search, is_active, ...options } = req.query;
-        const userRole = await roleService.getRoleByName(ROLES.user); // Get user role ID.
+        const userRole = await roleService.getRoleByName(ROLES.player); // Get user role ID.
         const filter = {
             deleted_at: null,
             role: userRole._id, // Filter by user role.

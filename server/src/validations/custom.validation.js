@@ -16,11 +16,11 @@ module.exports = {
      * Create a common function for check the password is valid or not.
      */
     password: (value, helpers) => {
-        if (value.length < 8) {
-            return helpers.message('password must be at least 8 characters');
-        }
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
-            return helpers.message('password must contain at least 1 letter and 1 number');
+        const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@#])[A-Za-z\d@#]{8,20}$/;
+        if (!value.match(regex)) {
+            return helpers.message(
+                'Use 8-20 characters with at least one uppercase letter, one number, and one special symbol like @ or #'
+            );
         }
         return value;
     },
