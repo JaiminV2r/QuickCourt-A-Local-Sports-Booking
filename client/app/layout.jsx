@@ -1,4 +1,5 @@
 import { AuthProvider } from "../contexts/auth-context"
+import QueryProvider from "../contexts/query-provider"
 import "./globals.css"
 
 export const metadata = {
@@ -10,7 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   )
