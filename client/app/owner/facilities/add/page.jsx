@@ -164,7 +164,8 @@ export default function AddFacilityPage() {
           initialValues={formInitialValues} 
           onSuccess={handleStep2Success} 
           onBack={handleBackToStep1}
-          venueId={venueId}
+          venueId={editId || venueId}
+          isEditMode={isEditMode}
         />
       )}
     </div>

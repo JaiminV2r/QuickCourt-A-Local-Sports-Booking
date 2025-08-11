@@ -3,8 +3,8 @@ import { useState } from "react"
 import { Formik, Form, Field, ErrorMessage } from "formik"
 import * as Yup from "yup"
 import { X, Plus, Users } from "lucide-react"
-import { useMutation } from "@tanstack/react-query"
-import { put, post } from "../../services/api-client"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { put, post, get } from "../../services/api-client"
 import { endpoints } from "../../services/endpoints"
 
 const step2ValidationSchema = Yup.object().shape({
@@ -13,24 +13,95 @@ const step2ValidationSchema = Yup.object().shape({
   availability: Yup.object()
 })
 
-export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, venueId }) {
-  const step2InitialValues = {
-    sports: initialValues?.sports || [],
-    courts: initialValues?.courts || [],
-    availability: initialValues?.availability || {}
+export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, venueId, isEditMode }) {
+  // Fetch venue data when in edit mode
+  const { data: venueResponse, isLoading: isLoadingVenue, error: venueError } = useQuery({
+    queryKey: ['venue', venueId],
+    queryFn: async () => {
+      if (!venueId) return null
+      const response = await get(endpoints.venues.byId(venueId))
+      return response
+    },
+    enabled: isEditMode && !!venueId,
+    retry: 1
+  })
+
+  // Extract venue data from the response
+  const venueData = venueResponse?.data
+
+  // Transform courts data from API to form format
+  const transformedCourts = venueData?.courts?.map((court, index) => ({
+    id: court._id || Date.now() + index,
+    sport: court.sport_type,
+    name: Array.isArray(court.court_name) ? court.court_name[0] : court.court_name
+  })) || []
+
+  // Transform availability data from API to form format
+  const transformedAvailability = {}
+  if (venueData?.courts) {
+    venueData.courts.forEach(court => {
+      const sport = court.sport_type
+      if (!transformedAvailability[sport]) {
+        transformedAvailability[sport] = {
+          sun: [{ startTime: "", endTime: "", price: "" }],
+          mon: [{ startTime: "", endTime: "", price: "" }],
+          tue: [{ startTime: "", endTime: "", price: "" }],
+          wed: [{ startTime: "", endTime: "", price: "" }],
+          thu: [{ startTime: "", endTime: "", price: "" }],
+          fri: [{ startTime: "", endTime: "", price: "" }],
+          sat: [{ startTime: "", endTime: "", price: "" }],
+        }
+      }
+
+      // Transform API availability to form format
+      if (court.availability && court.availability.length > 0) {
+        court.availability.forEach(dayAvailability => {
+          const dayKey = {
+            'Sunday': 'sun',
+            'Monday': 'mon', 
+            'Tuesday': 'tue',
+            'Wednesday': 'wed',
+            'Thursday': 'thu',
+            'Friday': 'fri',
+            'Saturday': 'sat'
+          }[dayAvailability.day_of_week]
+
+          if (dayKey && dayAvailability.time_slots && dayAvailability.time_slots.length > 0) {
+            transformedAvailability[sport][dayKey] = dayAvailability.time_slots.map(slot => {
+              const startTime = new Date(slot.start_time)
+              const endTime = new Date(slot.end_time)
+              return {
+                startTime: startTime.toTimeString().slice(0, 5), // HH:MM format
+                endTime: endTime.toTimeString().slice(0, 5), // HH:MM format
+                price: slot.price.toString()
+              }
+            })
+          }
+        })
+      }
+    })
   }
 
+  const step2InitialValues = {
+    sports: venueData?.courts ? [...new Set(venueData.courts.map(court => court.sport_type))] : (initialValues?.sports || []),
+    courts: transformedCourts.length > 0 ? transformedCourts : (initialValues?.courts || []),
+    availability: Object.keys(transformedAvailability).length > 0 ? transformedAvailability : (initialValues?.availability || {})
+  }
+
+  // Debug logging
+  console.log('API Response:', venueResponse)
+  console.log('Venue Data:', venueData)
+  console.log('Transformed Courts:', transformedCourts)
+  console.log('Transformed Availability:', transformedAvailability)
+  console.log('Final Initial Values:', step2InitialValues)
+
+
   const sportsOptions = [
-    "Badminton",
-    "Tennis",
-    "Football",
-    "Basketball",
-    "Cricket",
-    "Table Tennis",
-    "Volleyball",
-    "Squash",
-    "Swimming",
-    "Gym",
+    'Badminton',
+    'Football',
+    'Basketball',
+    'Tennis',
+    'Cricket',
   ]
 
   const updateSportsMutation = useMutation({
@@ -166,7 +237,26 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
       }}
     >
       {({ values, setFieldValue, errors, touched, isSubmitting, status }) => (
-        <Form className="space-y-6">
+  console.log(values.sports , "values.sports"),
+ 
+ <Form className="space-y-6">
+          {/* Loading state */}
+          {isLoadingVenue && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading venue data...</span>
+            </div>
+          )}
+
+          {/* Error state */}
+          {venueError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-600 text-sm">
+                Failed to load venue data: {venueError.message || 'Unknown error'}
+              </p>
+            </div>
+          )}
+
           {/* Sports Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">Select Sports Available *</label>

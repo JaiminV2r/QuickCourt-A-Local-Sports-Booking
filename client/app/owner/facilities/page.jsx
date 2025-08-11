@@ -30,8 +30,10 @@ export default function OwnerFacilitiesPage() {
 
   // Process API response data
   const facilities = data?.data?.results || []
-  const total = data?.total || data?.count || data?.totalCount || 0
-  const totalPages = data?.totalPages || data?.pages || Math.ceil(total / facilitiesPerPage) || 1
+  const total = data?.data?.totalResults  ||0
+  const totalPages = data?.data?.totalPages || 1
+
+  console.log(totalPages , "totalPages")
 
   // Filter facilities based on status (if needed)
   const filteredFacilities = facilities.filter((facility) => {
