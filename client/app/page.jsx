@@ -1,8 +1,6 @@
 "use client"
 
 import { useAuth } from "../contexts/auth-context"
-import Layout from "../components/layout"
-import ProtectedRoute from "../components/protected-route"
 import { Search, MapPin, Star, Users, ChevronRight, Calendar, Clock } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -104,219 +102,217 @@ export default function HomePage() {
   ]
 
   return (
-    <ProtectedRoute allowedRoles={["player"]}>
-      <Layout>
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="text-center">
-              <h1 className="text-3xl md:text-5xl font-bold mb-4">Hi {user?.name?.split(" ")[0]}! 👋</h1>
-              <h2 className="text-xl md:text-3xl font-semibold mb-6">Ready to play your favorite sport?</h2>
-              <p className="text-lg md:text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
-                Find and book local sports facilities in your area with just a few taps
-              </p>
+    <>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">Hi {user?.name?.split(" ")[0]}! 👋</h1>
+            <h2 className="text-xl md:text-3xl font-semibold mb-6">Ready to play your favorite sport?</h2>
+            <p className="text-lg md:text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
+              Find and book local sports facilities in your area with just a few taps
+            </p>
 
-              {/* Search Bar */}
-              <div className="max-w-2xl mx-auto">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search venues, sports, or locations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-32 py-4 text-gray-900 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-lg"
-                  />
-                  <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-yellow-400 text-gray-900 px-6 py-2 rounded-xl font-semibold hover:bg-yellow-500 transition-colors shadow-md">
-                    Search
-                  </button>
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Search className="h-6 w-6 text-gray-400" />
                 </div>
+                <input
+                  type="text"
+                  placeholder="Search venues, sports, or locations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-32 py-4 text-gray-900 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-lg"
+                />
+                <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-yellow-400 text-gray-900 px-6 py-2 rounded-xl font-semibold hover:bg-yellow-500 transition-colors shadow-md">
+                  Search
+                </button>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Quick Actions */}
-        <section className="py-8 bg-white -mt-8 relative z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Link
-                href="/my-bookings"
-                className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-2xl border border-green-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-green-500 p-3 rounded-2xl shadow-md">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-green-900">My Bookings</h3>
-                    <p className="text-green-700 text-sm">View your upcoming games</p>
-                  </div>
+      {/* Quick Actions */}
+      <section className="py-8 bg-white -mt-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link
+              href="/my-bookings"
+              className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-2xl border border-green-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-green-500 p-3 rounded-2xl shadow-md">
+                  <Calendar className="w-6 h-6 text-white" />
                 </div>
-              </Link>
-
-              <Link
-                href="/venues"
-                className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-500 p-3 rounded-2xl shadow-md">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-blue-900">Find Venues</h3>
-                    <p className="text-blue-700 text-sm">Discover new places to play</p>
-                  </div>
+                <div>
+                  <h3 className="font-semibold text-green-900">My Bookings</h3>
+                  <p className="text-green-700 text-sm">View your upcoming games</p>
                 </div>
-              </Link>
-
-              <Link
-                href="/profile"
-                className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-purple-500 p-3 rounded-2xl shadow-md">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-purple-900">My Profile</h3>
-                    <p className="text-purple-700 text-sm">Update your preferences</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Popular Sports */}
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Sport</h2>
-              <p className="text-gray-600 text-lg">What would you like to play today?</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {popularSports.map((sport, index) => (
-                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
-                  <div
-                    className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
-                  >
-                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                      {sport.icon}
-                    </div>
-                    <h3 className="font-semibold mb-1">{sport.name}</h3>
-                    <p className="text-sm opacity-90">{sport.venues} venues</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Popular Venues */}
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-12">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Venues Near You</h2>
-                <p className="text-gray-600 text-lg">Top-rated sports facilities in your area</p>
               </div>
-              <Link
-                href="/venues"
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold bg-blue-50 px-4 py-2 rounded-xl hover:bg-blue-100 transition-all"
-              >
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+            </Link>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {popularVenues.map((venue) => (
-                <Link key={venue.id} href={`/venues/${venue.id}`} className="group">
-                  <div className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">
-                    <div className="relative">
-                      <img
-                        src={venue.image || "/placeholder.svg"}
-                        alt={venue.name}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
-                        {venue.distance}
-                      </div>
-                      <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Next: {venue.nextSlot}
-                      </div>
+            <Link
+              href="/venues"
+              className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-500 p-3 rounded-2xl shadow-md">
+                  <MapPin className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900">Find Venues</h3>
+                  <p className="text-blue-700 text-sm">Discover new places to play</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/profile"
+              className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-purple-500 p-3 rounded-2xl shadow-md">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-purple-900">My Profile</h3>
+                  <p className="text-purple-700 text-sm">Update your preferences</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Sports */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Sport</h2>
+            <p className="text-gray-600 text-lg">What would you like to play today?</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {popularSports.map((sport, index) => (
+              <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                <div
+                  className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
+                >
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                    {sport.icon}
+                  </div>
+                  <h3 className="font-semibold mb-1">{sport.name}</h3>
+                  <p className="text-sm opacity-90">{sport.venues} venues</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Venues */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Venues Near You</h2>
+              <p className="text-gray-600 text-lg">Top-rated sports facilities in your area</p>
+            </div>
+            <Link
+              href="/venues"
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold bg-blue-50 px-4 py-2 rounded-xl hover:bg-blue-100 transition-all"
+            >
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {popularVenues.map((venue) => (
+              <Link key={venue.id} href={`/venues/${venue.id}`} className="group">
+                <div className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">
+                  <div className="relative">
+                    <img
+                      src={venue.image || "/placeholder.svg"}
+                      alt={venue.name}
+                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
+                      {venue.distance}
                     </div>
-                    <div className="p-5">
-                      <h3 className="font-bold text-gray-900 mb-2 text-lg">{venue.name}</h3>
-                      <div className="flex items-center gap-2 mb-3">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{venue.location}</span>
+                    <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Next: {venue.nextSlot}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-bold text-gray-900 mb-2 text-lg">{venue.name}</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{venue.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-sm font-semibold">{venue.rating}</span>
+                      <span className="text-xs text-gray-500">({venue.reviews} reviews)</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {venue.sports.map((sport, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium"
+                        >
+                          {sport}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-xl font-bold text-green-600">₹{venue.price}</span>
+                        <span className="text-sm text-gray-500">/hr</span>
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-semibold">{venue.rating}</span>
-                        <span className="text-xs text-gray-500">({venue.reviews} reviews)</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {venue.sports.map((sport, index) => (
-                          <span
-                            key={index}
-                            className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium"
-                          >
-                            {sport}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-xl font-bold text-green-600">₹{venue.price}</span>
-                          <span className="text-sm text-gray-500">/hr</span>
-                        </div>
-                        <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold group-hover:bg-blue-700 transition-colors">
-                          Book Now
-                        </div>
+                      <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold group-hover:bg-blue-700 transition-colors">
+                        Book Now
                       </div>
                     </div>
                   </div>
-                </Link>
-              ))}
-            </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Stats Section */}
-        <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Join Thousands of Players</h2>
-              <p className="text-blue-100 text-lg">Be part of the growing sports community</p>
+      {/* Stats Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Join Thousands of Players</h2>
+            <p className="text-blue-100 text-lg">Be part of the growing sports community</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+              <div className="text-4xl font-bold mb-2">500+</div>
+              <div className="text-blue-200">Sports Venues</div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">500+</div>
-                <div className="text-blue-200">Sports Venues</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">10K+</div>
-                <div className="text-blue-200">Happy Players</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">50K+</div>
-                <div className="text-blue-200">Bookings Made</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">15+</div>
-                <div className="text-blue-200">Sports Available</div>
-              </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+              <div className="text-4xl font-bold mb-2">10K+</div>
+              <div className="text-blue-200">Happy Players</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+              <div className="text-4xl font-bold mb-2">50K+</div>
+              <div className="text-blue-200">Bookings Made</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+              <div className="text-4xl font-bold mb-2">15+</div>
+              <div className="text-blue-200">Sports Available</div>
             </div>
           </div>
-        </section>
-      </Layout>
-    </ProtectedRoute>
+        </div>
+      </section>
+    </>
   )
 }

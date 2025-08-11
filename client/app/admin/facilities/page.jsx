@@ -1,7 +1,5 @@
 "use client"
 
-import Layout from "../../../components/layout"
-import ProtectedRoute from "../../../components/protected-route"
 import { useState } from "react"
 import { Search, Filter, Eye, Check, X, MapPin, Calendar, Phone, Mail, Building } from "lucide-react"
 
@@ -143,8 +141,6 @@ export default function AdminFacilitiesPage() {
   )
 
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
-      <Layout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
@@ -492,7 +488,5 @@ export default function AdminFacilitiesPage() {
             </div>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
   )
 }

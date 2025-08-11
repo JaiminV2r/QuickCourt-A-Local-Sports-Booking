@@ -126,8 +126,6 @@ export default function BookingPage({ params }) {
   }
 
   return (
-    <ProtectedRoute allowedRoles={["player"]}>
-      <Layout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
@@ -619,7 +617,5 @@ export default function BookingPage({ params }) {
             </div>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
   )
 }
