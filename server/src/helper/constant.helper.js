@@ -60,6 +60,14 @@ module.exports = {
         'Basketball',
         'Tennis',
         'Cricket',
+    ],
+
+    AMENITIES:[
+        'WiFi',
+        'Parking',
+        'Food',
+        'Drinks',
+        'Equipment'
     ]
 
-};
+}

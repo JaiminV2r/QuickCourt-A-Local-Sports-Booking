@@ -38,7 +38,6 @@ module.exports = {
                 venue_type: Joi.string()
                     .valid('indoor', 'outdoor', 'turf', 'hybrid')
                     .default('indoor'),
-                starting_price_per_hour: Joi.number().min(0).default(0),
             })
             .required(),
     },
@@ -68,10 +67,9 @@ module.exports = {
                     Joi.object().keys({
                         venue_id: Joi.string().custom(objectId).required(),
                         court_name: Joi.string().min(2).max(120).required(),
-                        court_type: Joi.string()
+                        sport_type: Joi.string()
                             .valid(...SPORT_TYPE)
                             .required(),
-                        price_per_hour: Joi.number().min(0).required(),
                         operating_hours: Joi.string().min(5).max(50).required(), // Ensure operating hours format like "9 AM to 5 PM"
                         availability: Joi.array()
                             .items(
@@ -112,7 +110,7 @@ module.exports = {
 
     updateCourt: Joi.object().keys({
         court_name: Joi.string().min(2).max(120).optional(),
-        sport_type: Joi.string().valid('Badminton', 'Tennis', 'Football', 'Basketball').optional(),
+        sport_type: Joi.string().valid(...SPORT_TYPE).optional(),
         pricing_per_hour: Joi.number().min(0).optional(),
         operating_hours: Joi.string().min(5).max(50).optional(),
         availability: Joi.array()
