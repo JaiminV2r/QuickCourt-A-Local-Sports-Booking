@@ -7,6 +7,13 @@ export const endpoints = {
     sendOtp: '/auth/send-otp',
     logout: '/auth/logout',
   },
+  city: {
+    list: '/city/list',
+  },
+  venues: {
+    list: '/venues/list',
+    byId: (id) => `/venues/${id}`,
+  },
   admin: {
     dashboard: {
       stats: '/admin/dashboard/stats',
@@ -69,6 +76,10 @@ export const endpoints = {
   facilities: {
     list: '/api/facilities',
     byId: (id) => `/api/facilities/${id}`,
+  },
+  venues: {
+    list: '/user/facility-owners/venues/list',
+    byId: (id) => `/user/facility-owners/venues/${id}`,
   },
   bookings: {
     list: '/api/bookings',
