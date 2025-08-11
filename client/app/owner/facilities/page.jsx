@@ -82,7 +82,7 @@ export default function OwnerFacilitiesPage() {
     }
   }
 
-  const filteredFacilities = facilities.filter((facility) => {
+  const filteredFacilities = facilities?.filter((facility) => {
     const matchesSearch =
       facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       facility.city.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,7 +92,7 @@ export default function OwnerFacilitiesPage() {
 
   const totalRevenue = facilities.reduce((sum, facility) => sum + facility.monthlyRevenue, 0)
   const totalBookings = facilities.reduce((sum, facility) => sum + facility.totalBookings, 0)
-  const activeFacilities = facilities.filter((f) => f.status === "Active").length
+  const activeFacilities = facilities?.filter((f) => f.status === "Active").length
 
   return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -217,11 +217,15 @@ export default function OwnerFacilitiesPage() {
                           <MapPin className="w-4 h-4" />
                           <span className="text-sm">{facility.address}</span>
                         </div>
-                        {facility.rating > 0 && (
+                        {(typeof facility.rating === 'object' ? facility.rating.avg > 0 : facility.rating > 0) && (
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium">{facility.rating}</span>
+                              <span className="text-sm font-medium">
+                                {typeof facility.rating === 'object' && facility.rating.avg 
+                                  ? facility.rating.avg.toFixed(1)
+                                  : facility.rating}
+                              </span>
                             </div>
                             <span className="text-sm text-gray-500">({facility.totalBookings} bookings)</span>
                           </div>

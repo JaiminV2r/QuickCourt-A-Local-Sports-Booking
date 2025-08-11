@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { get, post } from '../services/api-client'
+import { get, post, put } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
@@ -102,6 +102,29 @@ export function useSendOtpMutation() {
 export function useLogoutMutation() {
   return useMutation({
     mutationFn: (payload) => post(endpoints.auth.logout, payload),
+  })
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: (payload) => post(endpoints.auth.forgotPassword, payload),
+  })
+}
+
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: (payload) => put(endpoints.auth.resetPassword, payload),
+    onSuccess: (res) => {
+      // Handle successful password reset
+      if (res?.success) {
+        // You can add any additional logic here if needed
+        console.log('Password reset successful')
+      }
+    },
+    onError: (error) => {
+      // Handle errors - this will be handled by the component using toast
+      console.error('Password reset failed:', error)
+    }
   })
 }
 

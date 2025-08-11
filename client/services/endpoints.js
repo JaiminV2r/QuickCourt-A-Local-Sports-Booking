@@ -6,12 +6,17 @@ export const endpoints = {
     roles: '/auth/roles',
     sendOtp: '/auth/send-otp',
     logout: '/auth/logout',
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password',
   },
   city: {
     list: '/city/list',
   },
+  sports: {
+    stats: '/sports/stats',
+  },
   venues: {
-    list: '/venues/list',
+    list: '/user/facility-owners/venues',
     byId: (id) => `/venues/${id}`,
   },
   admin: {
@@ -27,11 +32,15 @@ export const endpoints = {
       stats: '/admin/facilities/stats',
       approve: (id) => `/admin/facilities/${id}/approve`,
       reject: (id) => `/admin/facilities/${id}/reject`,
+      bulkApprove: '/admin/facilities/bulk-approve',
+      bulkReject: '/admin/facilities/bulk-reject',
+      detail: (id) => `/admin/facilities/${id}`,
+      update: (id) => `/admin/facilities/${id}`,
+      delete: (id) => `/admin/facilities/${id}`,
     },
     users: {
-      list: '/admin/user',
-      ban: (id) => `/admin/user/${id}/ban`,
-      unban: (id) => `/admin/user/${id}/unban`,
+      list: '/admin/user/list',
+      block: (id) => `/admin/user/block/${id}`,
       history: (id) => `/admin/user/${id}/bookings`,
     },
     reports: {
@@ -47,40 +56,22 @@ export const endpoints = {
       update: '/admin/profile',
     },
   },
-  admin: {
-    stats: '/api/admin/stats',
-    charts: '/api/admin/charts',
-    facilities: {
-      pending: '/api/admin/facilities/pending',
-      approved: '/api/admin/facilities/approved',
-      rejected: '/api/admin/facilities/rejected',
-      approve: (id) => `/api/admin/facilities/${id}/approve`,
-      reject: (id) => `/api/admin/facilities/${id}/reject`,
-    },
-    users: {
-      list: '/api/admin/users',
-      ban: (id) => `/api/admin/users/${id}/ban`,
-      unban: (id) => `/api/admin/users/${id}/unban`,
-      history: (id) => `/api/admin/users/${id}/bookings`,
-    },
-    reports: {
-      list: '/api/admin/reports',
-      resolve: (id) => `/api/admin/reports/${id}/resolve`,
-      action: (id) => `/api/admin/reports/${id}/action`,
-    },
-    profile: {
-      me: '/api/admin/profile',
-      update: '/api/admin/profile',
-    },
-  },
+
   facilities: {
     list: '/api/facilities',
     byId: (id) => `/api/facilities/${id}`,
+    create: '/api/facilities',
+    update: (id) => `/api/facilities/${id}`,
+    delete: (id) => `/api/facilities/${id}`,
+    search: '/api/facilities/search',
+    filter: '/api/facilities/filter',
   },
   bookings: {
     list: '/api/bookings',
     create: '/api/bookings',
     byId: (id) => `/api/bookings/${id}`,
+    update: (id) => `/api/bookings/${id}`,
+    cancel: (id) => `/api/bookings/${id}/cancel`,
   },
 }
 

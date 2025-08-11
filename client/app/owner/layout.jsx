@@ -3,12 +3,10 @@
 import ProtectedRoute from "../../components/protected-route"
 import { ROLES } from "../../lib/constant"
 
-export default function AdminLayout({ children }) {
+export default function OwnerLayout({ children }) {
   return (
-    <ProtectedRoute allowedRoles={[ROLES.admin]}>
+    <ProtectedRoute allowedRoles={[ROLES.facility_owner]}>
       {children}
     </ProtectedRoute>
   )
 }
-
-

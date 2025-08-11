@@ -166,4 +166,61 @@ module.exports = {
             reason: Joi.string().trim().optional(),
         }),
     },
+
+    /**
+     * Admin facility operations validation schemas
+     */
+    
+    // Get facilities with filters
+    getAdminFacilities: {
+        query: Joi.object().keys({
+            page: Joi.number().integer().min(1).default(1),
+            limit: Joi.number().integer().min(1).max(100).default(10),
+            search: Joi.string().trim().allow(''),
+            status: Joi.string().valid(...Object.values(VENUE_STATUS)).optional(),
+            city: Joi.string().trim().allow(''),
+            sport: Joi.string().trim().allow('')
+        }),
+    },
+
+    // Get facility by ID
+    getFacilityById: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Approve facility
+    approveFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Reject facility
+    rejectFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+        body: Joi.object().keys({
+            reason: Joi.string().trim().min(1).required().messages({
+                'string.empty': 'Rejection reason is required',
+                'any.required': 'Rejection reason is required',
+            }),
+        }),
+    },
+
+    // Toggle facility status
+    toggleFacilityStatus: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
+
+    // Delete facility
+    deleteFacility: {
+        params: Joi.object().keys({
+            id: Joi.string().custom(objectId).required(),
+        }),
+    },
 };

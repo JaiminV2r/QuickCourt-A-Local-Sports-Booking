@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "../contexts/auth-context"
 import {
@@ -33,7 +33,7 @@ export default function Layout({ children, allowedRoles }) {
   return <LayoutInner>{children}</LayoutInner>
 }
 
-function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavItems }) {
+function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavItems, pathname }) {
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,16 +59,27 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            {getNavItems().map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            ))}
+            {getNavItems().map((item) => {
+              const isActive = pathname === item.href || 
+                (item.href !== "/" && 
+                 item.href !== "/admin" && 
+                 item.href !== "/owner" && 
+                 pathname.startsWith(item.href + "/"));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${
+                    isActive 
+                      ? "text-blue-600 bg-blue-50 border border-blue-200" 
+                      : "text-gray-600 hover:text-blue-600"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right: auth controls (desktop) */}
@@ -128,17 +139,28 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
       {isMobileMenuOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {getNavItems().map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-gray-600 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            ))}
+            {getNavItems().map((item) => {
+              const isActive = pathname === item.href || 
+                (item.href !== "/" && 
+                 item.href !== "/admin" && 
+                 item.href !== "/owner" && 
+                 pathname.startsWith(item.href + "/"));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 ${
+                    isActive 
+                      ? "text-blue-600 bg-blue-50 border border-blue-200" 
+                      : "text-gray-600 hover:text-blue-600"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
 
             <div className="border-t pt-3 mt-3">
               {user ? (
@@ -197,12 +219,6 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">QuickCourt</h3>
-            <p className="text-gray-300 mb-4">Your local sports booking platform</p>
-            <div className="flex space-x-4">
-              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-              <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
-            </div>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
@@ -241,6 +257,7 @@ function LayoutInner({ children }) {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
   const { user, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname();
 
   const getNavItems = () => {
     if (!user) {
@@ -252,14 +269,13 @@ function LayoutInner({ children }) {
         { href: "/contact", label: "Contact", icon: Users },
       ]
     }
-    console.log('🔥🔥🔥🔥user.role🔥🔥🔥🔥🔥',user.role);
     switch (user.role) {
       case ROLES.admin:
         return [
           { href: "/admin", label: "Dashboard", icon: BarChart3 },
           { href: "/admin/facilities", label: "Facilities", icon: Building },
           { href: "/admin/users", label: "Users", icon: Users },
-          { href: "/admin/reports", label: "Reports", icon: FileText },
+          // { href: "/admin/reports", label: "Reports", icon: FileText },
           { href: "/admin/settings", label: "Settings", icon: Settings },
         ]
       case ROLES.facility_owner:
@@ -303,6 +319,7 @@ function LayoutInner({ children }) {
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         getNavItems={getNavItems}
+        pathname={pathname}
       />
       <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
         <AlertDialogContent>
