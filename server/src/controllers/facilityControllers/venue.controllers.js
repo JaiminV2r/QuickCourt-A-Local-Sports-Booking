@@ -21,6 +21,7 @@ module.exports = {
             sports: req.body.sports || [],
             amenities: req.body.amenities || [],
             about: req.body.about || null,
+            phone: req.body.phone || null,
             // optional: venue_status stays default (PENDING)
         };
 
@@ -62,7 +63,7 @@ module.exports = {
         const { id } = req.params;
 
         // Find the venue by ID
-        let venue = await venueService.get({_id:id});
+        let venue = await venueService.get({ _id: id });
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -82,6 +83,7 @@ module.exports = {
         venue.venue_type = req.body.venue_type || venue.venue_type;
         venue.starting_price_per_hour =
             req.body.starting_price_per_hour || venue.starting_price_per_hour;
+            venue.phone = req.body.phone || venue.phone;
 
         // 2) Handle images - Adding new images or updating old ones
         const imageFiles = (req.files && req.files.images) || [];
@@ -241,9 +243,12 @@ module.exports = {
     getVenue: catchAsync(async (req, res) => {
         const { id } = req.params;
 
-        const venue = await venueService.get({_id:id});
+        const venue = await venueService.get({ _id: id });
 
-        const courts = await Court.find({ venue_id: new mongoose.Types.ObjectId(id), deleted_at: null });
+        const courts = await Court.find({
+            venue_id: new mongoose.Types.ObjectId(id),
+            deleted_at: null,
+        });
         if (!venue) {
             return res.status(404).json({
                 success: false,
@@ -254,7 +259,7 @@ module.exports = {
         return res.status(200).json({
             success: true,
             message: 'Venue fetched successfully',
-            data:{ venue , courts },
+            data: { venue, courts },
         });
     }),
 
