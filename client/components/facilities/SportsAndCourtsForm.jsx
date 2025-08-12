@@ -10,7 +10,31 @@ import { endpoints } from "../../services/endpoints"
 const step2ValidationSchema = Yup.object().shape({
   sports: Yup.array().min(1, "At least one sport is required"),
   courts: Yup.array().min(1, "At least one court is required"),
-  availability: Yup.object()
+  availability: Yup.object().test(
+    'availability-validation',
+    'All selected sports must have at least one valid time slot with start time, end time, and price',
+    function(availability) {
+      const { sports } = this.parent
+      if (!sports || sports.length === 0) return true
+      
+      return sports.every(sport => {
+        const sportAvailability = availability[sport]
+        if (!sportAvailability) return false
+        
+        // Check if at least one day has a valid time slot
+        const hasValidSlot = Object.values(sportAvailability).some(daySlots => {
+          return daySlots.some(slot => 
+            slot.startTime && 
+            slot.endTime && 
+            slot.price && 
+            parseInt(slot.price) > 0
+          )
+        })
+        
+        return hasValidSlot
+      })
+    }
+  )
 })
 
 export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, venueId, isEditMode }) {
@@ -68,12 +92,43 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
 
           if (dayKey && dayAvailability.time_slots && dayAvailability.time_slots.length > 0) {
             transformedAvailability[sport][dayKey] = dayAvailability.time_slots.map(slot => {
-              const startTime = new Date(slot.start_time)
-              const endTime = new Date(slot.end_time)
+              // Handle different date formats from API
+              let startTime, endTime
+              
+              try {
+                const startDate = new Date(slot.start_time)
+                const endDate = new Date(slot.end_time)
+                
+                // Extract time in HH:MM format
+                startTime = startDate.toLocaleTimeString('en-GB', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: false 
+                })
+                endTime = endDate.toLocaleTimeString('en-GB', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: false 
+                })
+                
+                // Fallback if the above doesn't work
+                if (startTime === 'Invalid Date' || endTime === 'Invalid Date') {
+                  // Try parsing as ISO string and extract time
+                  const startISO = new Date(slot.start_time).toISOString()
+                  const endISO = new Date(slot.end_time).toISOString()
+                  startTime = startISO.substring(11, 16) // Extract HH:MM from ISO string
+                  endTime = endISO.substring(11, 16)
+                }
+              } catch (error) {
+                console.error('Error parsing time slots:', error, slot)
+                startTime = ''
+                endTime = ''
+              }
+              
               return {
-                startTime: startTime.toTimeString().slice(0, 5), // HH:MM format
-                endTime: endTime.toTimeString().slice(0, 5), // HH:MM format
-                price: slot.price.toString()
+                startTime: startTime || '',
+                endTime: endTime || '',
+                price: slot.price ? slot.price.toString() : ''
               }
             })
           }
@@ -94,6 +149,22 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
   console.log('Transformed Courts:', transformedCourts)
   console.log('Transformed Availability:', transformedAvailability)
   console.log('Final Initial Values:', step2InitialValues)
+  
+  // Additional debug for time slots
+  if (venueData?.courts) {
+    venueData.courts.forEach((court, index) => {
+      console.log(`Court ${index + 1} (${court.sport_type}):`, {
+        courtName: court.court_name,
+        availability: court.availability
+      })
+      
+      if (court.availability) {
+        court.availability.forEach(dayAvail => {
+          console.log(`  ${dayAvail.day_of_week}:`, dayAvail.time_slots)
+        })
+      }
+    })
+  }
 
 
   const sportsOptions = [
@@ -104,18 +175,180 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
     'Cricket',
   ]
 
+  // Query to fetch existing bookings for this venue
+  const { data: bookingsData } = useQuery({
+    queryKey: ['venue-bookings', venueId],
+    queryFn: async () => {
+      if (!venueId) return { data: [] }
+      const response = await get(`/api/bookings?venue_id=${venueId}`)
+      return response
+    },
+    enabled: !!venueId,
+    retry: 1
+  })
+
+  // Extract booked time slots
+  const bookedSlots = bookingsData?.data || []
+
+  // Helper function to check if a time slot is already booked
+  const isTimeSlotBooked = (sport, dayKey, startTime, endTime, selectedDate = new Date()) => {
+    const dayNames = {
+      sun: 'Sunday',
+      mon: 'Monday', 
+      tue: 'Tuesday',
+      wed: 'Wednesday',
+      thu: 'Thursday',
+      fri: 'Friday',
+      sat: 'Saturday'
+    }
+    
+    const targetDay = dayNames[dayKey]
+    const selectedDateStr = selectedDate.toDateString()
+    
+    return bookedSlots.some(booking => {
+      if (booking.status === 'cancelled') return false
+      
+      const bookingDate = new Date(booking.booking_date)
+      const bookingDay = bookingDate.toLocaleDateString('en-US', { weekday: 'long' })
+      
+      // Check if it's the same day and sport
+      if (bookingDay !== targetDay || booking.sport_type !== sport) return false
+      
+      // Check for time overlap
+      const bookingStart = new Date(booking.start_time)
+      const bookingEnd = new Date(booking.end_time)
+      const slotStart = new Date(`${selectedDateStr} ${startTime}`)
+      const slotEnd = new Date(`${selectedDateStr} ${endTime}`)
+      
+      // Check if times overlap
+      return (slotStart < bookingEnd && slotEnd > bookingStart)
+    })
+  }
+
+  // Helper function to check if a time conflicts with existing slots on the same day
+  const isTimeConflictingWithDaySlots = (sport, dayKey, time, isEndTime, startTime, currentSlotIndex, values) => {
+    const daySlots = values.availability[sport]?.[dayKey] || []
+    
+    return daySlots.some((slot, index) => {
+      // Skip the current slot being edited
+      if (index === currentSlotIndex) return false
+      
+      // Skip empty slots
+      if (!slot.startTime || !slot.endTime) return false
+      
+      const slotStart = slot.startTime
+      const slotEnd = slot.endTime
+      
+      if (isEndTime && startTime) {
+        // For end time, check if the range [startTime, time] overlaps with [slotStart, slotEnd]
+        return (startTime < slotEnd && time > slotStart)
+      } else {
+        // For start time, check if this time falls within existing slot range
+        return (time >= slotStart && time < slotEnd)
+      }
+    })
+  }
+
+  // Helper function to get available time options (excluding booked slots and same-day conflicts)
+  const getAvailableTimeOptions = (sport, dayKey, currentTime, isEndTime = false, startTime = null, currentSlotIndex = 0, values = {}) => {
+    const allTimes = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"]
+    
+    return allTimes.filter(time => {
+      // For end time, only show times after start time
+      if (isEndTime && startTime) {
+        const startHour = parseInt(startTime.split(':')[0])
+        const timeHour = parseInt(time.split(':')[0])
+        if (timeHour <= startHour) return false
+      }
+      
+      // Check if this time conflicts with other slots on the same day
+      if (isTimeConflictingWithDaySlots(sport, dayKey, time, isEndTime, startTime, currentSlotIndex, values)) {
+        return false
+      }
+      
+      // Check if this time slot would conflict with existing bookings
+      if (isEndTime && startTime) {
+        return !isTimeSlotBooked(sport, dayKey, startTime, time)
+      } else if (!isEndTime) {
+        // For start time, check if there's enough room for at least 1 hour slot
+        const nextHour = String(parseInt(time.split(':')[0]) + 1).padStart(2, '0') + ':00'
+        return !isTimeSlotBooked(sport, dayKey, time, nextHour)
+      }
+      
+      return true
+    })
+  }
+
   const updateSportsMutation = useMutation({
     mutationFn: async (values) => {
+      // Transform the form data to match the API payload structure
+      const courts = values.courts.map(court => {
+        // Get availability data for this court's sport
+        const sportAvailability = values.availability[court.sport] || {}
+        
+        // Transform the availability data to match API format
+        const availability = Object.entries(sportAvailability).map(([dayKey, timeSlots]) => {
+          const dayNames = {
+            sun: 'Sunday',
+            mon: 'Monday', 
+            tue: 'Tuesday',
+            wed: 'Wednesday',
+            thu: 'Thursday',
+            fri: 'Friday',
+            sat: 'Saturday'
+          }
+          
+          // Filter out empty time slots and transform to API format
+          const validTimeSlots = timeSlots
+            .filter(slot => slot.startTime && slot.endTime && slot.price)
+            .map(slot => {
+              // Create UTC dates for the time slots
+              const referenceDate = new Date()
+              const dayOffset = Object.keys(dayNames).indexOf(dayKey)
+              referenceDate.setDate(referenceDate.getDate() + dayOffset)
+              
+              const startDate = new Date(referenceDate)
+              const [startHour, startMin] = slot.startTime.split(':')
+              startDate.setUTCHours(parseInt(startHour), parseInt(startMin), 0, 0)
+              
+              const endDate = new Date(referenceDate)
+              const [endHour, endMin] = slot.endTime.split(':')
+              endDate.setUTCHours(parseInt(endHour), parseInt(endMin), 0, 0)
+              
+              return {
+                start_time: startDate.toISOString(),
+                end_time: endDate.toISOString(),
+                price: parseInt(slot.price)
+              }
+            })
+          
+          return validTimeSlots.length > 0 ? {
+            day_of_week: dayNames[dayKey],
+            time_slots: validTimeSlots
+          } : null
+        }).filter(Boolean) // Remove null entries
+        
+        return {
+          venue_id: venueId,
+          court_name: [court.name],
+          sport_type: court.sport,
+          availability: availability
+        }
+      })
+      
       const payload = {
         sports: values.sports,
-        courts: values.courts,
-        availability: values.availability
+        courts: courts
       }
-      return await put(endpoints.venues.updateSports(venueId), payload)
+      
+      return await put(endpoints.venues.update(venueId), payload)
     },
     onSuccess: (data) => {
       onSuccess(data)
     },
+    onError: (error) => {
+      console.error('Update sports mutation error:', error)
+    }
   })
 
   const createCourtsMutation = useMutation({
@@ -142,7 +375,6 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
             .filter(slot => slot.startTime && slot.endTime && slot.price)
             .map(slot => {
               // Create UTC dates for the time slots
-              // Using a reference date (e.g., next Monday) and the time
               const referenceDate = new Date()
               const dayOffset = Object.keys(dayNames).indexOf(dayKey)
               referenceDate.setDate(referenceDate.getDate() + dayOffset)
@@ -205,6 +437,39 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
     }
   }
 
+  // Helper function to validate if form is ready for submission
+  const isFormValid = (values, errors) => {
+    // Check basic validation errors
+    if (Object.keys(errors).length > 0) return false
+    
+    // Check if sports are selected
+    if (!values.sports || values.sports.length === 0) return false
+    
+    // Check if courts are added for each sport
+    const sportsWithCourts = values.sports.every(sport => {
+      return values.courts.some(court => court.sport === sport)
+    })
+    if (!sportsWithCourts) return false
+    
+    // Check if each sport has at least one valid time slot
+    const sportsWithValidSlots = values.sports.every(sport => {
+      const sportAvailability = values.availability[sport]
+      if (!sportAvailability) return false
+      
+      return Object.values(sportAvailability).some(daySlots => {
+        return daySlots.some(slot => {
+          const hasValidTimes = slot.startTime && slot.endTime
+          const hasValidPrice = slot.price && parseInt(slot.price) > 0
+          const isValidTimeRange = slot.startTime < slot.endTime
+          
+          return hasValidTimes && hasValidPrice && isValidTimeRange
+        })
+      })
+    })
+    
+    return sportsWithValidSlots
+  }
+
   const addCourt = (sport, courtName, setFieldValue, values) => {
     if (!courtName.trim()) return
     
@@ -228,18 +493,17 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
       enableReinitialize
       validationSchema={step2ValidationSchema}
       onSubmit={(values, { setSubmitting, setStatus }) => {
-        createCourtsMutation.mutate(values, {
+        const mutation = isEditMode ? updateSportsMutation : createCourtsMutation
+        mutation.mutate(values, {
           onError: (error) => {
-            setStatus({ error: error.message || "Failed to create courts. Please try again." })
+            setStatus({ error: error.message || `Failed to ${isEditMode ? 'update' : 'create'} courts. Please try again.` })
             setSubmitting(false)
           }
         })
       }}
     >
       {({ values, setFieldValue, errors, touched, isSubmitting, status }) => (
-  console.log(values.sports , "values.sports"),
- 
- <Form className="space-y-6">
+        <Form className="space-y-6">
           {/* Loading state */}
           {isLoadingVenue && (
             <div className="flex items-center justify-center py-8">
@@ -320,13 +584,21 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
                                   value={slot.startTime}
                                   onChange={(e) => {
                                     setFieldValue(`availability.${sport}.${day.key}[${index}].startTime`, e.target.value)
+                                    // Clear end time when start time changes
+                                    setFieldValue(`availability.${sport}.${day.key}[${index}].endTime`, "")
                                   }}
                                   className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
                                 >
                                   <option value="">Select time</option>
-                                  {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"].map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
+                                  {getAvailableTimeOptions(sport, day.key, slot.startTime, false, null, index, values).map(time => {
+                                    const isBooked = isTimeSlotBooked(sport, day.key, time, String(parseInt(time.split(':')[0]) + 1).padStart(2, '0') + ':00')
+                                    const isConflicting = isTimeConflictingWithDaySlots(sport, day.key, time, false, null, index, values)
+                                    return (
+                                      <option key={time} value={time}>
+                                        {time} {isBooked ? ' (Booked)' : isConflicting ? ' (Unavailable)' : ''}
+                                      </option>
+                                    )
+                                  })}
                                 </select>
                               </td>
                               <td className="p-2">
@@ -336,11 +608,18 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
                                     setFieldValue(`availability.${sport}.${day.key}[${index}].endTime`, e.target.value)
                                   }}
                                   className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                                  disabled={!slot.startTime}
                                 >
                                   <option value="">Select time</option>
-                                  {["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"].map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
+                                  {slot.startTime && getAvailableTimeOptions(sport, day.key, slot.endTime, true, slot.startTime, index, values).map(time => {
+                                    const isBooked = isTimeSlotBooked(sport, day.key, slot.startTime, time)
+                                    const isConflicting = isTimeConflictingWithDaySlots(sport, day.key, time, true, slot.startTime, index, values)
+                                    return (
+                                      <option key={time} value={time}>
+                                        {time} {isBooked ? ' (Booked)' : isConflicting ? ' (Unavailable)' : ''}
+                                      </option>
+                                    )
+                                  })}
                                 </select>
                               </td>
                               <td className="p-2">
@@ -348,10 +627,15 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
                                   type="number"
                                   value={slot.price}
                                   onChange={(e) => {
-                                    setFieldValue(`availability.${sport}.${day.key}[${index}].price`, parseInt(e.target.value) || 0)
+                                    const value = e.target.value
+                                    setFieldValue(`availability.${sport}.${day.key}[${index}].price`, value === '' ? '' : parseInt(value) || 0)
                                   }}
-                                  className="w-16 p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                                  min="0"
+                                  className={`w-16 p-1 border rounded focus:outline-none focus:ring-1 text-xs ${
+                                    slot.startTime && slot.endTime && (!slot.price || parseInt(slot.price) <= 0)
+                                      ? 'border-red-300 focus:ring-red-500'
+                                      : 'border-gray-300 focus:ring-blue-500'
+                                  }`}
+                                  min="1"
                                   placeholder="₹/hr"
                                 />
                               </td>
@@ -453,8 +737,47 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
             </div>
           )}
 
+          {/* Validation Messages */}
+          {errors.sports && touched.sports && (
+            <div className="text-red-500 text-sm mb-4">{errors.sports}</div>
+          )}
+          
           {errors.courts && touched.courts && (
-            <div className="text-red-500 text-sm mb-4">Please add at least one court for each selected sport</div>
+            <div className="text-red-500 text-sm mb-4">{errors.courts}</div>
+          )}
+          
+          {errors.availability && touched.availability && (
+            <div className="text-red-500 text-sm mb-4">{errors.availability}</div>
+          )}
+          
+          {/* Custom validation messages */}
+          {values.sports.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {values.sports.map(sport => {
+                const hasCourts = values.courts.some(court => court.sport === sport)
+                const hasValidSlots = values.availability[sport] && Object.values(values.availability[sport]).some(daySlots => 
+                  daySlots.some(slot => slot.startTime && slot.endTime && slot.price && parseInt(slot.price) > 0)
+                )
+                
+                if (!hasCourts) {
+                  return (
+                    <div key={sport} className="text-red-500 text-sm">
+                      ⚠️ {sport}: Please add at least one court
+                    </div>
+                  )
+                }
+                
+                if (!hasValidSlots) {
+                  return (
+                    <div key={sport} className="text-red-500 text-sm">
+                      ⚠️ {sport}: Please add at least one complete time slot (start time, end time, and price)
+                    </div>
+                  )
+                }
+                
+                return null
+              })}
+            </div>
           )}
 
           {status?.error && (
@@ -473,10 +796,16 @@ export default function SportsAndCourtsForm({ initialValues, onSuccess, onBack, 
             </button>
             <button
               type="submit"
-              disabled={!values.sports.length || !values.courts.length || createCourtsMutation.isPending}
+              disabled={
+                !isFormValid(values, errors) || 
+                createCourtsMutation.isPending || 
+                updateSportsMutation.isPending
+              }
               className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {createCourtsMutation.isPending ? "Creating Courts..." : "Create Courts & Submit"}
+              {(createCourtsMutation.isPending || updateSportsMutation.isPending) 
+                ? (isEditMode ? "Updating Courts..." : "Creating Courts...") 
+                : (isEditMode ? "Update Courts & Submit" : "Create Courts & Submit")}
             </button>
           </div>
         </Form>
