@@ -33,8 +33,6 @@ export default function OwnerFacilitiesPage() {
   const total = data?.data?.totalResults  ||0
   const totalPages = data?.data?.totalPages || 1
 
-  console.log(totalPages , "totalPages")
-
   // Filter facilities based on status (if needed)
   const filteredFacilities = facilities.filter((facility) => {
     if (statusFilter === "pending") return true
@@ -90,17 +88,7 @@ export default function OwnerFacilitiesPage() {
   // Error component
   const ErrorState = () => (
     <div className="col-span-full bg-white rounded-2xl shadow-sm border p-12 text-center">
-      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Users className="w-8 h-8 text-red-400" />
-      </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load facilities</h3>
-      <p className="text-gray-600 mb-6">{error?.message || 'Something went wrong while loading your facilities.'}</p>
-      <button
-        onClick={() => window.location.reload()}
-        className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-semibold"
-      >
-        Try Again
-      </button>
+     No facilities found
     </div>
   )
 
@@ -153,7 +141,7 @@ export default function OwnerFacilitiesPage() {
            {/* Quick Actions */}
            <div className="my-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link
                 href="/owner/facilities/add"
                 className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
@@ -178,7 +166,7 @@ export default function OwnerFacilitiesPage() {
                   <div className="text-sm text-gray-600">View and manage all bookings</div>
                 </div>
               </Link>
-              <Link
+              {/* <Link
                 href="/owner/analytics"
                 className="flex items-center gap-3 p-4 bg-white rounded-xl hover:shadow-md transition-shadow"
               >
@@ -189,7 +177,7 @@ export default function OwnerFacilitiesPage() {
                   <div className="font-medium text-gray-900">View Analytics</div>
                   <div className="text-sm text-gray-600">Track performance and insights</div>
                 </div>
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -216,10 +204,10 @@ export default function OwnerFacilitiesPage() {
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                {/* <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
                   <Filter className="w-4 h-4" />
                   More Filters
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

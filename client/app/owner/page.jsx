@@ -240,7 +240,7 @@ export default function OwnerDashboard() {
               </div>
             </Link>
 
-            <Link
+            {/* <Link
               href="/owner/analytics"
               className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
             >
@@ -253,11 +253,11 @@ export default function OwnerDashboard() {
                   <p className="text-purple-700 text-sm">Track performance metrics</p>
                 </div>
               </div>
-            </Link>
+            </Link> */}
 
             {/* Removed Manage Courts quick action; courts are managed inside facility add/edit */}
 
-            <Link
+            {/* <Link
               href="/owner/time-slots"
               className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-6 rounded-2xl border border-yellow-200 hover:shadow-lg transition-all transform hover:scale-[1.02]"
             >
@@ -270,7 +270,7 @@ export default function OwnerDashboard() {
                   <p className="text-yellow-700 text-sm">Set availability & blocks</p>
                 </div>
               </div>
-            </Link>
+            </Link> */}
 
             <Link
               href="/owner/profile"

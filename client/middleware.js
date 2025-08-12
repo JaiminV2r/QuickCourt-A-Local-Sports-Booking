@@ -45,7 +45,7 @@ export function middleware(request) {
   const { pathname } = request.nextUrl
 
   // Redirect authenticated users away from guest-only routes
-  const isGuestOnly = pathname === '/auth/login' || pathname === '/auth/signup'
+  const isGuestOnly = pathname === '/auth/login' || pathname === '/auth/signup' 
   const userCookieValue = request.cookies.get('quickcourt_user')?.value
   const userFromCookie = userCookieValue ? parseUserCookie(userCookieValue) : null
 

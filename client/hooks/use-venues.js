@@ -23,3 +23,22 @@ export const useVenuesByCity = (cityName, enabled = false) => {
     refetchOnWindowFocus: false,
   })
 }
+
+export const useApprovedVenues = ({search = "",page = 1, limit }) => {
+  return useQuery({
+    queryKey: ['venues', 'approved',page, limit, search],
+    queryFn: async () => {
+      const response = await get(endpoints.venues.approvedList, {
+        limit,
+        page: page,
+        search: search
+      })
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch approved venues')
+      }
+      return response
+    },
+    retry: 2,
+    refetchOnWindowFocus: false,
+  })
+}
