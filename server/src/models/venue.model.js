@@ -1,9 +1,9 @@
 // backend/src/models/venue.model.js
 const mongoose = require('mongoose');
-const { VENUE_STATUS, SPORT_TYPE, AMENITIES } = require('../helper/constant.helper');
-const { urlFromName } = require('../utils/cloudnairy.utils');
+const { VENUE_STATUS, SPORT_TYPE, FILES_FOLDER } = require('../helper/constant.helper');
 
 const { toJSON, paginate } = require('./plugins');
+const config = require('../config/config');
 const VenueSchema = new mongoose.Schema(
     {
         owner_id: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -32,7 +32,7 @@ const VenueSchema = new mongoose.Schema(
         ],
 
         // store ONLY image names; URLs are computed at response time
-        photos: [String],
+        images: [String],
         video: { type: String, default: null },
 
         about: [{ type: String, default: null }],
@@ -53,6 +53,7 @@ const VenueSchema = new mongoose.Schema(
         },
         // soft activity flag
         is_active: { type: Boolean, default: true, index: true },
+        deleted_at: { type: Date, default: null },
     },
     { timestamps: true }
 );
@@ -63,8 +64,8 @@ VenueSchema.plugin(toJSON);
 // Add Cloudinary URLs at response time without storing them
 VenueSchema.set('toJSON', {
     transform: (_, ret) => {
-        ret.photoUrls = (ret.photos || []).map((name) =>
-            urlFromName('venue', name, { w: 1600, h: 900 })
+        ret.images = (ret.images || []).map(
+            (name) => `${config.base_url}/${FILES_FOLDER.venueImages}/${name}`
         );
         return ret;
     },

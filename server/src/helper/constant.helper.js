@@ -4,6 +4,7 @@ module.exports = {
         default: 'default',
         userImages: 'userImages',
         productImages: 'productImages',
+        venueImages: 'venueImages',
     },
 
     ROLES: {
