@@ -28,7 +28,7 @@ module.exports = {
             // optional: venue_status stays default (PENDING)
         };
 
-        if (files.length) {
+        if (files?.length) {
             const { name } = await fileService.saveFile({
                 file: files,
                 folderName: FILES_FOLDER.venueImages,
