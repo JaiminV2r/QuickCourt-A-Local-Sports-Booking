@@ -17,9 +17,12 @@ export default function VenuesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState("grid") // grid or list
   const venuesPerPage = 8
-  const searchParams = useSearchParams()
-  const sportFromUrl = (searchParams.get("sport") || "").toLowerCase()
-
+const normalize = (s) =>
+  String(s || '')
+    .trim()
+    .charAt(0).toUpperCase() + String(s || '').trim().slice(1).toLowerCase();
+const searchParams = useSearchParams();
+const sportFromUrl = normalize(searchParams.get("sport"));
   // const sports = ["All Sports", "Badminton", "Tennis", "Football", "Basketball", "Cricket", "Table Tennis"]
   const priceRanges = ["All Prices", "₹0-500", "₹500-1000", "₹1000-1500", "₹1500+"]
   const ratings = ["All Ratings", "4.5+", "4.0+", "3.5+", "3.0+"]
@@ -29,7 +32,7 @@ export default function VenuesPage() {
       rating === "4.5+" ? 4.5 : rating === "4.0+" ? 4.0 : rating === "3.5+" ? 3.5 : rating === "3.0+" ? 3.0 : 0
     const sportParam =
       selectedSport && selectedSport !== "All Sports"
-        ? selectedSport.toLowerCase()
+        ? selectedSport
         : (sportFromUrl || undefined)
 
     return {
