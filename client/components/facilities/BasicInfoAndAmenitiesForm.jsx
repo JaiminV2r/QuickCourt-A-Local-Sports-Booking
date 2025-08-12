@@ -18,7 +18,17 @@ const step1ValidationSchema = Yup.object().shape({
   phone: Yup.string().required("Phone number is required")
   .matches(/^[6-9]\d{9}$/, "Invalid phone number")
   .max(10, "Phone number must be 10 digits"),
-  amenities: Yup.array().min(1, "At least one amenity is required")
+  amenities: Yup.array().min(1, "At least one amenity is required"),
+  images: Yup.array()
+    .max(5, "Maximum 5 images allowed")
+    .test('fileSize', 'Each image must be less than 1MB', function(value) {
+      if (!value || value.length === 0) return true
+      return value.every(file => file && file.size <= 1024 * 1024) // 1MB limit
+    })
+    .test('fileType', 'Only image files are allowed', function(value) {
+      if (!value || value.length === 0) return true
+      return value.every(file => file && file.type && file.type.startsWith('image/'))
+    })
 })
 
 export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, isEditMode, venueId }) {
@@ -70,6 +80,7 @@ export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, is
       return initialValues?.amenities || []
     })(),
     amenityInput: "",
+    images: [], // Array to store File objects for upload
   }
 
   // City API states
@@ -112,18 +123,35 @@ export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, is
   // Venue creation mutation
   const createVenueMutation = useMutation({
     mutationFn: async (values) => {
-      const payload = {
-        venue_name: values.name,
-        description: values.description,
-        address: values.address,
-        city: values.city,
-        about: values.about,
-        venue_type: values.venue_type,
-        amenities: values.amenities,
-        phone: values.phone,
+      // Create FormData for file upload
+      const formData = new FormData()
+      
+      // Add venue data
+      formData.append('venue_name', values.name)
+      formData.append('description', values.description)
+      formData.append('address', values.address)
+      formData.append('city', values.city)
+      formData.append('about', values.about)
+      formData.append('venue_type', values.venue_type)
+      formData.append('phone', values.phone)
+      
+      // Add amenities as individual array items
+      values?.amenities.forEach((amenity) => {
+        formData.append('amenities[]', amenity)
+      })
+      
+      // Add images as File objects
+      if (values.images && values.images.length > 0) {
+        values.images.forEach((file, index) => {
+          formData.append('images', file)
+        })
       }
 
-      return await post(endpoints.venues.create, payload)
+      return await post(endpoints.venues.create, formData, {
+        headers: {
+          'Content-Type': undefined // Explicitly remove Content-Type to let browser set it for FormData
+        }
+      })
     },
     onSuccess: (response) => {
       // Extract the venue ID from the API response
@@ -141,18 +169,35 @@ export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, is
   // Venue update mutation
   const updateVenueMutation = useMutation({
     mutationFn: async (values) => {
-      const payload = {
-        venue_name: values.name,
-        description: values.description,
-        address: values.address,
-        city: values.city,
-        about: values.about,
-        venue_type: values.venue_type,
-        amenities: values.amenities,
-        phone: values.phone,
+      // Create FormData for file upload
+      const formData = new FormData()
+      
+      // Add venue data
+      formData.append('venue_name', values.name)
+      formData.append('description', values.description)
+      formData.append('address', values.address)
+      formData.append('city', values.city)
+      formData.append('about', values.about)
+      formData.append('venue_type', values.venue_type)
+      formData.append('phone', values.phone)
+      
+      // Add amenities as individual array items
+      values?.amenities.forEach((amenity) => {
+        formData.append('amenities[]', amenity)
+      })
+      
+      // Add images as File objects (only new images)
+      if (values.images && values.images.length > 0) {
+        values.images.forEach((file, index) => {
+          formData.append('images', file)
+        })
       }
 
-      return await put(endpoints.venues.update(venueId), payload)
+      return await put(endpoints.venues.update(venueId), formData, {
+        headers: {
+          // Don't set Content-Type, let browser set it with boundary for FormData
+        }
+      })
     },
     onSuccess: (data) => {
       onSuccess(data)
@@ -445,6 +490,118 @@ export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, is
             </div>
             {errors.amenities && touched.amenities && (
               <div className="text-red-500 text-sm mt-1">{errors.amenities}</div>
+            )}
+          </div>
+
+          {/* Image Upload Section */}
+          <div className="mb-8 mt-8">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Upload Images (Max 5, each under 1MB)
+            </label>
+            
+            {/* File Input */}
+            <div className="mb-4">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files)
+                  
+                  // Validate file count
+                  if (values.images.length + files.length > 5) {
+                    alert('Maximum 5 images allowed')
+                    return
+                  }
+                  
+                  // Validate file size and type
+                  const validFiles = files.filter(file => {
+                    if (file.size > 1024 * 1024) {
+                      alert(`${file.name} is too large. Maximum size is 1MB.`)
+                      return false
+                    }
+                    if (!file.type.startsWith('image/')) {
+                      alert(`${file.name} is not an image file.`)
+                      return false
+                    }
+                    return true
+                  })
+                  
+                  // Add valid files to the images array
+                  setFieldValue('images', [...values.images, ...validFiles])
+                  
+                  // Clear the input
+                  e.target.value = ''
+                }}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Image Previews */}
+            {values.images.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+                {values.images.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newImages = values.images.filter((_, i) => i !== index)
+                        setFieldValue('images', newImages)
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Drag and Drop Area */}
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+              onDrop={(e) => {
+                e.preventDefault()
+                const files = Array.from(e.dataTransfer.files)
+                
+                // Validate file count
+                if (values.images.length + files.length > 5) {
+                  alert('Maximum 5 images allowed')
+                  return
+                }
+                
+                // Validate and add files
+                const validFiles = files.filter(file => {
+                  if (file.size > 1024 * 1024) {
+                    alert(`${file.name} is too large. Maximum size is 1MB.`)
+                    return false
+                  }
+                  if (!file.type.startsWith('image/')) {
+                    alert(`${file.name} is not an image file.`)
+                    return false
+                  }
+                  return true
+                })
+                
+                setFieldValue('images', [...values.images, ...validFiles])
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnter={(e) => e.preventDefault()}
+            >
+              <div className="text-gray-500">
+                <p className="text-lg mb-2">📷</p>
+                <p>Drag and drop images here or click to select</p>
+                <p className="text-sm mt-1">Maximum 5 images, each under 1MB</p>
+              </div>
+            </div>
+
+            {errors.images && touched.images && (
+              <div className="text-red-500 text-sm mt-2">{errors.images}</div>
             )}
           </div>
 

@@ -1,7 +1,6 @@
 const Joi = require('joi');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/apiError');
-const { deleteFile } = require('../services/files.service');
 const pick = require('../utils/pick');
 
 // Localization removed
@@ -14,16 +13,6 @@ const validate = (schema) => (req, res, next) => {
         .validate(object, { labels: true });
 
     if (error) {
-        if (req.file) deleteFile(`./${req.file.path}`);
-
-        if (req.files) {
-            for (let key in req.files) {
-                for (let ele of req.files[key]) {
-                    deleteFile(`./${ele.path}`);
-                }
-            }
-        }
-
         const errorMessage = error.details.map((ele) => ele.message).join(', ');
 
         return next(new ApiError(httpStatus.BAD_REQUEST, errorMessage));

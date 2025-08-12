@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { get } from '../services/api-client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { get, getPublic, post, put, del } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 
 export const useVenuesByCity = (cityName, enabled = false) => {
@@ -39,6 +39,22 @@ export const useApprovedVenues = ({search = "",page = 1, limit , sport_type }) =
       }
       return response
     },
+    retry: 2,
+    refetchOnWindowFocus: false,
+  })
+}
+
+export const useVenueDetails = (venueId) => {
+  return useQuery({
+    queryKey: ['venue', 'details', venueId],
+    queryFn: async () => {
+      const response = await getPublic(endpoints.venues.byId(venueId))
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch venue details')
+      }
+      return response
+    },
+    enabled: !!venueId,
     retry: 2,
     refetchOnWindowFocus: false,
   })
