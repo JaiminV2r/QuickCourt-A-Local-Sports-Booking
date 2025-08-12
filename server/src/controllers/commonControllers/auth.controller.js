@@ -233,8 +233,7 @@ module.exports = {
         }
 
         const result = await otpService.resendOtp(emailExist._id); // Generate and store OTP with rate limiting.
-
-        if (!result.ok) {
+        if (!result.ok && result.reason) {
             if (result.reason === 'too_soon') {
                 throw new ApiError(
                     httpStatus.TOO_MANY_REQUESTS,
@@ -249,7 +248,8 @@ module.exports = {
             subject: 'Verify Mail!',
             template: 'otpEmailTemplate', // <---  TEmplate name in Views folder // ✅ Dynamic template name
             data: {
-                ...body,
+                full_name: emailExist.full_name,
+                email: body.email,
                 otp: result.otp,
             },
         });
