@@ -269,7 +269,7 @@ export default function HomePage() {
             ) : sportsError ? (
               // Error state with fallback data
               fallbackSports.map((sport, index) => (
-                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                <Link key={index} href={`/venues?sport=${sport.name}`} className="group">
                   <div
                     className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
                   >
@@ -299,7 +299,7 @@ export default function HomePage() {
             ) : (
               // Fallback data if no sports data
               fallbackSports.map((sport, index) => (
-                <Link key={index} href={`/venues?sport=${sport.name.toLowerCase()}`} className="group">
+                <Link key={index} href={`/venues?sport=${sport.name}`} className="group">
                   <div
                     className={`bg-gradient-to-br ${sport.color} p-6 rounded-3xl text-center hover:shadow-xl transition-all duration-300 transform hover:scale-[1.05] text-white`}
                   >
