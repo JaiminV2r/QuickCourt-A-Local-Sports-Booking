@@ -56,12 +56,7 @@ module.exports = {
     },
 
     SPORT_TYPE: [
-        'Badminton',
-        'Football',
-        'Basketball',
-        'Tennis',
-        'Cricket',
-        'Table Tennis',
+       "Badminton", "Tennis", "Football", "Basketball", "Cricket", "Table Tennis"
     ],
 
     AMENITIES:[

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useVenuesQuery } from "../../actions/venues"
 import { endpoints } from "../../services/endpoints"
 import { useApprovedVenues } from "@/hooks/use-venues"
+import { useSearchParams } from "next/navigation"
 
 export default function VenuesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -16,20 +17,28 @@ export default function VenuesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState("grid") // grid or list
   const venuesPerPage = 8
+  const searchParams = useSearchParams()
+  const sportFromUrl = (searchParams.get("sport") || "").toLowerCase()
 
-  const sports = ["All Sports", "Badminton", "Tennis", "Football", "Basketball", "Cricket", "Table Tennis"]
+  // const sports = ["All Sports", "Badminton", "Tennis", "Football", "Basketball", "Cricket", "Table Tennis"]
   const priceRanges = ["All Prices", "₹0-500", "₹500-1000", "₹1000-1500", "₹1500+"]
   const ratings = ["All Ratings", "4.5+", "4.0+", "3.5+", "3.0+"]
 
   const apiParams = useMemo(() => {
     const parsedRating =
       rating === "4.5+" ? 4.5 : rating === "4.0+" ? 4.0 : rating === "3.5+" ? 3.5 : rating === "3.0+" ? 3.0 : 0
+    const sportParam =
+      selectedSport && selectedSport !== "All Sports"
+        ? selectedSport.toLowerCase()
+        : (sportFromUrl || undefined)
+
     return {
       // search: searchQuery || undefined,
-      // sport: selectedSport && selectedSport !== "All Sports" ? selectedSport.toLowerCase() : undefined,
+      sport_type: sportParam,
+
       // priceRange: priceRange || undefined,
       // rating: parsedRating || undefined,
-      search : searchQuery,
+      search: searchQuery,
       page: currentPage,
       limit: venuesPerPage,
     }
@@ -39,7 +48,7 @@ export default function VenuesPage() {
 
   // Handle different possible API response structures
   const items = data?.data?.results || []
-  const total = data?.data?.totalResults  || 0
+  const total = data?.data?.totalResults || 0
   const totalPages = data?.data?.totalPages || 1
 
   console.log(items, "items...")
@@ -134,7 +143,7 @@ export default function VenuesPage() {
                   ))}
                 </select>
               </div>
-             
+
             </div>
           )}
         </div>
@@ -211,10 +220,10 @@ export default function VenuesPage() {
                           {city || "Nearby"}
                         </div>
                         <div className="absolute bottom-3 left-3 flex gap-2">
-                        <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {venue_status === 'approved' ? 'Available' : 'Pending'}
-                      </div>
+                          <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {venue_status === 'approved' ? 'Available' : 'Pending'}
+                          </div>
                         </div>
                       </div>
                       <div className="p-4">
@@ -262,7 +271,7 @@ export default function VenuesPage() {
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${rating?.avg >= 4 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                   }`}
                               >
-                                 {venue_status === 'approved' ? 'Available' : 'Pending'}
+                                {venue_status === 'approved' ? 'Available' : 'Pending'}
                               </div>
                               {nextSlot && (
                                 <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">

@@ -8,6 +8,7 @@ const { VENUE_STATUS, FILES_FOLDER } = require('../../helper/constant.helper');
 const { str2regex } = require('../../helper/function.helper');
 const config = require('../../config/config');
 const path = require('path');
+const { pipeline } = require('stream');
 
 module.exports = {
     createVenue: catchAsync(async (req, res) => {
@@ -76,7 +77,7 @@ module.exports = {
         venue.venue_status = VENUE_STATUS.PENDING;
         venue.starting_price_per_hour =
             req.body.starting_price_per_hour || venue.starting_price_per_hour;
-            venue.phone = req.body.phone || venue.phone;
+        venue.phone = req.body.phone || venue.phone;
 
         if (remove_images?.length) {
             fileService.deleteFiles(
@@ -186,7 +187,7 @@ module.exports = {
         });
     }),
     getAllApprovedVenues: catchAsync(async (req, res) => {
-        let { page = 1, limit = 10, search = '' } = req.query;
+        let { page = 1, limit = 10, search = '', sport_type } = req.query;
 
         let filter = {
             deleted_at: null,
@@ -200,6 +201,16 @@ module.exports = {
                 { city: { $regex: search, $options: 'i' } }
             );
         }
+        let innerFilter = {
+            deleted_at: null
+        };
+
+
+        if (sport_type) {
+            const types = Array.isArray(sport_type) ? sport_type : sport_type.split(',');
+            innerFilter.sport_type = { $in: types };
+        }
+
 
         if (!filter.$or.length) delete filter.$or;
 
@@ -222,6 +233,9 @@ module.exports = {
                     from: 'courts',
                     localField: '_id',
                     foreignField: 'venue_id',
+                    pipeline: [
+                       { $match:innerFilter}
+                    ],
                     as: 'courts',
                 },
             },

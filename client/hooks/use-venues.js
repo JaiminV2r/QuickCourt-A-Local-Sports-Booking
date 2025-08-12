@@ -24,14 +24,15 @@ export const useVenuesByCity = (cityName, enabled = false) => {
   })
 }
 
-export const useApprovedVenues = ({search = "",page = 1, limit }) => {
+export const useApprovedVenues = ({search = "",page = 1, limit , sport_type }) => {
   return useQuery({
-    queryKey: ['venues', 'approved',page, limit, search],
+    queryKey: ['venues', 'approved',page, limit, search,sport_type],
     queryFn: async () => {
       const response = await get(endpoints.venues.approvedList, {
         limit,
         page: page,
-        search: search
+        search: search,
+        sport_type
       })
       if (!response.success) {
         throw new Error(response.message || 'Failed to fetch approved venues')
