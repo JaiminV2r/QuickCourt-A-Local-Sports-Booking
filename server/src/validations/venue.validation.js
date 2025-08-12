@@ -98,6 +98,8 @@ module.exports = {
             page: Joi.number().default(1).allow(''),
             limit: Joi.number().default(10).allow(''),
             search: Joi.string().trim().allow(''),
+            sport_type: Joi.string().valid(...Object.values(SPORT_TYPE)).optional().allow('',null)
+
         }),
     },
     getVenue: {

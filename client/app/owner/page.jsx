@@ -4,8 +4,20 @@ import { useState } from "react"
 import { Building, Calendar, DollarSign, TrendingUp, Clock, CheckCircle, Plus, BarChart3, UserCircle2 } from "lucide-react"
 import Link from "next/link"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, AreaChart, Area, Legend } from "recharts"
+import { useVenuesQuery } from "../../actions/venues"
 
 export default function OwnerDashboard() {
+  // Fetch facilities with limit of 3
+  const { data: facilitiesResponse, isLoading: facilitiesLoading, error: facilitiesError } = useVenuesQuery({
+    limit: 3,
+    page: 1
+  })
+
+  // Extract facilities from API response
+  const apiFacilities = facilitiesResponse?.data?.results || []
+
+  console.log(apiFacilities , "apiFacilities..")
+
   // Simulated datasets for charts
   const bookingsTrendData = [
     { label: "Mon", bookings: 32 },
@@ -301,47 +313,30 @@ export default function OwnerDashboard() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {facilities.map((facility) => (
+                  {apiFacilities?.map((facility) => (
                     <div
-                      key={facility.id}
+                      key={facility._id}
                       className="border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900">{facility.name}</h3>
+                        <h3 className="font-semibold text-gray-900">{facility.venue_name}</h3>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getFacilityStatusColor(facility.status)}`}
                         >
-                          {facility.status}
+                          {facility.venue_status}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{facility.location}</p>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex gap-4 text-sm text-gray-600">
-                          <span>{facility.courts} courts</span>
+                          <span>{facility.city}</span>
                           <span>•</span>
                           <span>{facility.sports.join(", ")}</span>
                         </div>
                       </div>
-                      {facility.status === "Active" && (
-                        <div className="mb-3">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600">Occupancy</span>
-                            <span className="font-medium">{facility.occupancy}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${facility.occupancy}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
+                     
                       <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                          <span className="text-gray-600">Today: </span>
-                          <span className="font-medium">{facility.todayBookings} bookings</span>
-                        </div>
-                        <div className="text-lg font-bold text-green-600">{facility.revenue}</div>
+                        {facility?.amenities?.join(", ")}
                       </div>
                     </div>
                   ))}

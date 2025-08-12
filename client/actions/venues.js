@@ -11,10 +11,11 @@ export function useVenuesQuery(params = {}) {
     queryKey: [...queryKeys.venues.all, params],
     queryFn: async () => {
       console.log('Fetching venues with params:', params)
-      const response = await get(endpoints.venues.approvedList, params)
+      const response = await get(endpoints.venues.list, params)
       console.log('Venues API response:', response)
       return response
     },
+    staleTime: 5 * 60 * 1000, // 5 
     retry: 2,
     retryDelay: 1000,
   })
