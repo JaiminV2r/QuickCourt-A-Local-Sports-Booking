@@ -47,14 +47,6 @@ otpSchema.set('toJSON', {
     },
 });
 
-// Hash OTP before saving
-otpSchema.pre('save', async function (next) {
-    if (this.isModified('otp_hash') && this.otp_hash) {
-        this.otp_hash = await bcrypt.hash(this.otp_hash, SALT_ROUNDS);
-    }
-    next();
-});
-
 // Instance method: compare candidate OTP
 otpSchema.methods.compareOtp = async function (candidateOtp) {
     return bcrypt.compare(candidateOtp, this.otp_hash);
