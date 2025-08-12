@@ -39,7 +39,7 @@ router.get(
 
 router.get(
     '/:id',
-    auth(ROLES.facility_owner),
+    // auth(ROLES.facility_owner),
     validate(venueValidation.getVenue),
     venueControllers.getVenue
 );
