@@ -69,6 +69,7 @@ export const endpoints = {
   },
   venues: {
     list: '/user/facility-owners/venues/list',
+    approvedList: '/user/facility-owners/venues/approved/list',
     byId: (id) => `/user/facility-owners/venues/${id}`,
     create: '/user/facility-owners/venues/create',
     update: (id) => `/user/facility-owners/venues/update/${id}`,

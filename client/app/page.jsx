@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
 import { useSportsStats } from "../hooks/use-sports"
 import { useCitiesSearch } from "../hooks/use-cities"
-import { useVenuesByCity } from "../hooks/use-venues"
+import { useVenuesByCity, useApprovedVenues } from "../hooks/use-venues"
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -14,6 +14,8 @@ export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState("")
   const [showCityDropdown, setShowCityDropdown] = useState(false)
   const greetingName = user?.name?.split(" ")[0] ?? "Player"
+
+  const limit = 4
 
   // React Query hooks
   const { 
@@ -29,37 +31,28 @@ export default function HomePage() {
   } = useCitiesSearch(searchQuery, showCityDropdown)
   
   const { 
-    data: venues = [], 
-    isLoading: isLoadingVenues 
-  } = useVenuesByCity(selectedCity, !!selectedCity)
+    data: venuesByCity = [], 
+    isLoading: isLoadingVenuesByCity 
+  } = useApprovedVenues({search:selectedCity, limit})
+  
+  const { 
+    data: approvedVenues, 
+    isLoading: isLoadingApprovedVenues,
+    error: approvedVenuesError 
+  } = useApprovedVenues({limit: 4})
+  
+  // Use city-specific venues if city is selected, otherwise use approved venues
+  const venues = selectedCity ? 
+    (venuesByCity?.data?.results || []).slice(0, limit) : 
+    (approvedVenues?.data?.results || []).slice(0, 4)
+  const isLoadingVenues = selectedCity ? isLoadingVenuesByCity : isLoadingApprovedVenues
 
   // Simplified functions - data fetching now handled by React Query
   const searchCities = useCallback((query) => {
       setShowCityDropdown(true)
   }, [])
 
-  // Search venues by city
-  const searchVenuesByCity = useCallback(async (cityName) => {
-    if (!cityName) return
-
-    setIsLoadingVenues(true)
-    try {
-      const response = await get(endpoints.venues.list, {
-        city: cityName,
-        limit: 4,
-        page: 1,
-      })
-      if (response.success) {
-        setVenues(response.data.results)
-      }
-    } catch (error) {
-      console.error('Error searching venues:', error)
-      setVenues([])
-    } finally {
-      setIsLoadingVenues(false)
-    }
-  }, [])
-
+  
   // Handle city selection
   const handleCitySelect = (city) => {
     setSelectedCity(city.name)
@@ -115,60 +108,12 @@ export default function HomePage() {
     { name: "Table Tennis", icon: "🏓", venues: 35, color: "from-yellow-400 to-yellow-500" },
   ]
 
-  const popularVenues = [
-    {
-      id: 1,
-      name: "SportZone Arena",
-      sports: ["Badminton", "Tennis"],
-      price: 500,
-      location: "Koramangala, Bangalore",
-      rating: 4.8,
-      reviews: 156,
-      image: "/vibrant-sports-arena.png",
-      amenities: ["Parking", "Changing Room", "Water"],
-      distance: "2.3 km",
-      nextSlot: "6:00 PM",
-    },
-    {
-      id: 2,
-      name: "Elite Sports Club",
-      sports: ["Football", "Basketball"],
-      price: 800,
-      location: "Indiranagar, Bangalore",
-      rating: 4.6,
-      reviews: 89,
-      image: "/vibrant-sports-club.png",
-      amenities: ["AC", "Parking", "Cafeteria"],
-      distance: "3.1 km",
-      nextSlot: "7:00 PM",
-    },
-    {
-      id: 3,
-      name: "Champions Court",
-      sports: ["Badminton", "Table Tennis"],
-      price: 400,
-      location: "Whitefield, Bangalore",
-      rating: 4.7,
-      reviews: 203,
-      image: "/badminton-court.png",
-      amenities: ["Parking", "Equipment Rental"],
-      distance: "5.2 km",
-      nextSlot: "8:00 PM",
-    },
-    {
-      id: 4,
-      name: "Victory Grounds",
-      sports: ["Cricket", "Football"],
-      price: 1200,
-      location: "HSR Layout, Bangalore",
-      rating: 4.5,
-      reviews: 67,
-      image: "/cricket-ground.png",
-      amenities: ["Floodlights", "Parking", "Changing Room"],
-      distance: "4.8 km",
-      nextSlot: "9:00 PM",
-    },
-  ]
+  useEffect(()=>{
+    return ()=>{
+      setSelectedCity("")
+      setSearchQuery("")
+    }
+  },[])
 
   return (
     <>
@@ -456,7 +401,7 @@ export default function HomePage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <div>
-                          <span className="text-xl font-bold text-green-600">₹500</span>
+                          <span className="text-xl font-bold text-green-600">₹{venue.price || "0"}</span>
                           <span className="text-sm text-gray-500">/hr</span>
                         </div>
                         <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold group-hover:bg-blue-700 transition-colors">
@@ -467,59 +412,7 @@ export default function HomePage() {
                   </div>
                 </Link>
               ))
-            ) : (
-              popularVenues.map((venue) => (
-                <Link key={venue.id} href={`/venues/${venue.id}`} className="group">
-                  <div className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">
-                    <div className="relative">
-                      <img
-                        src={venue.image || "/placeholder.svg"}
-                        alt={venue.name}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
-                        {venue.distance}
-                      </div>
-                      <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Next: {venue.nextSlot}
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-bold text-gray-900 mb-2 text-lg">{venue.name}</h3>
-                      <div className="flex items-center gap-2 mb-3">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{venue.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-semibold">{venue.rating}</span>
-                        <span className="text-xs text-gray-500">({venue.reviews} reviews)</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {venue.sports.map((sport, index) => (
-                          <span
-                            key={index}
-                            className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium"
-                          >
-                            {sport}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-xl font-bold text-green-600">₹{venue.price}</span>
-                          <span className="text-sm text-gray-500">/hr</span>
-                        </div>
-                        <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold group-hover:bg-blue-700 transition-colors">
-                          Book Now
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            )}
+            ) :  "No venues found" }
           </div>
         </div>
       </section>

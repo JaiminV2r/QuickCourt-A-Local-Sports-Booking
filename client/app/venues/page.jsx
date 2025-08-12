@@ -1,10 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Search, MapPin, Star, ChevronDown, SlidersHorizontal } from "lucide-react"
+import { Search, MapPin, Star, ChevronDown, SlidersHorizontal, Clock } from "lucide-react"
 import Link from "next/link"
 import { useVenuesQuery } from "../../actions/venues"
 import { endpoints } from "../../services/endpoints"
+import { useApprovedVenues } from "@/hooks/use-venues"
 
 export default function VenuesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -24,21 +25,22 @@ export default function VenuesPage() {
     const parsedRating =
       rating === "4.5+" ? 4.5 : rating === "4.0+" ? 4.0 : rating === "3.5+" ? 3.5 : rating === "3.0+" ? 3.0 : 0
     return {
-      q: searchQuery || undefined,
-      sport: selectedSport && selectedSport !== "All Sports" ? selectedSport.toLowerCase() : undefined,
-      priceRange: priceRange || undefined,
-      rating: parsedRating || undefined,
+      // search: searchQuery || undefined,
+      // sport: selectedSport && selectedSport !== "All Sports" ? selectedSport.toLowerCase() : undefined,
+      // priceRange: priceRange || undefined,
+      // rating: parsedRating || undefined,
+      search : searchQuery,
       page: currentPage,
       limit: venuesPerPage,
     }
   }, [searchQuery, selectedSport, priceRange, rating, currentPage])
 
-  const { data, isLoading, error } = useVenuesQuery(apiParams)
+  const { data, isLoading, error } = useApprovedVenues(apiParams)
 
   // Handle different possible API response structures
   const items = data?.data?.results || []
-  const total = data?.total || data?.count || data?.totalCount || 0
-  const totalPages = data?.totalPages || data?.pages || Math.ceil(total / venuesPerPage) || 1
+  const total = data?.data?.totalResults  || 0
+  const totalPages = data?.data?.totalPages || 1
 
   console.log(items, "items...")
   return (
@@ -132,20 +134,7 @@ export default function VenuesPage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {ratings.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-              </div>
+             
             </div>
           )}
         </div>
@@ -201,7 +190,7 @@ export default function VenuesPage() {
             }
           >
             {items?.map((venue) => {
-              const { venue_name, location, rating, _id, price, sports, distance, nextSlot, image } = venue
+              const { venue_name, location, rating, _id, price, venue_status, city, sports, distance, nextSlot, image } = venue
 
               // Extract latitude and longitude from location
               const latitude = location?.coordinates?.latitude || "N/A"
@@ -219,24 +208,17 @@ export default function VenuesPage() {
                           className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-gray-700">
-                          {distance || "Nearby"}
+                          {city || "Nearby"}
                         </div>
                         <div className="absolute bottom-3 left-3 flex gap-2">
-                          <div
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${rating >= 4 ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
-                          >
-                            {rating?.avg >= 4 ? "Good Rating" : "Needs Review"}
-                          </div>
-                          {nextSlot && (
-                            <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                              Next: {nextSlot}
-                            </div>
-                          )}
+                        <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {venue_status === 'approved' ? 'Available' : 'Pending'}
+                      </div>
                         </div>
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-900 mb-2">{venue_name}</h3>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{locationText}</p> {/* Displaying coordinates */}
                         <div className="flex items-center gap-2 mb-3">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
                           <span className="text-sm font-medium">{rating?.avg}</span>
@@ -280,7 +262,7 @@ export default function VenuesPage() {
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${rating?.avg >= 4 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                   }`}
                               >
-                                {rating?.avg >= 4 ? "Good Rating" : "Needs Review"}
+                                 {venue_status === 'approved' ? 'Available' : 'Pending'}
                               </div>
                               {nextSlot && (
                                 <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
