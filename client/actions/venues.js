@@ -5,17 +5,16 @@ import { get, post, put, del } from '../services/api-client'
 import { endpoints } from '../services/endpoints'
 import { queryKeys } from './query-keys'
 
-// Get venues list with filters
+// Get venues list with filters (public approved venues)
 export function useVenuesQuery(params = {}) {
   return useQuery({
     queryKey: [...queryKeys.venues.all, params],
     queryFn: async () => {
       console.log('Fetching venues with params:', params)
-      const response = await get(endpoints.venues.list, params)
+      const response = await get(endpoints.venues.approvedList, params)
       console.log('Venues API response:', response)
       return response
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
     retryDelay: 1000,
   })

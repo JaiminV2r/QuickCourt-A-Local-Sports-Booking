@@ -15,6 +15,9 @@ const step1ValidationSchema = Yup.object().shape({
   city: Yup.string().required("City is required"),
   about: Yup.string().required("About is required"),
   venue_type: Yup.string().required("Venue type is required"),
+  phone: Yup.string().required("Phone number is required")
+  .matches(/^[6-9]\d{9}$/, "Invalid phone number")
+  .max(10, "Phone number must be 10 digits"),
   amenities: Yup.array().min(1, "At least one amenity is required")
 })
 
@@ -66,7 +69,7 @@ export default function BasicInfoAndAmenitiesForm({ initialValues, onSuccess, is
       }
       return initialValues?.amenities || []
     })(),
-    amenityInput: ""
+    amenityInput: "",
   }
 
   // City API states
