@@ -94,9 +94,19 @@ module.exports = {
 
         const verify = await otpService.verifyAndConsume(emailExist._id, otp);
         if (!verify.ok) {
-            if (verify.reason === 'expired')
-                throw new ApiError(httpStatus.BAD_REQUEST, 'OTP expired');
-            throw new ApiError(httpStatus.BAD_REQUEST, 'OTP invalid');
+            switch (verify.reason) {
+                case 'expired':
+                    throw new ApiError(httpStatus.BAD_REQUEST, 'OTP has expired');
+                case 'max_attempts_exceeded':
+                    throw new ApiError(
+                        httpStatus.BAD_REQUEST,
+                        'Maximum OTP attempts exceeded. Please request a new OTP'
+                    );
+                case 'not_found':
+                    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP');
+                default:
+                    throw new ApiError(httpStatus.BAD_REQUEST, 'OTP verification failed');
+            }
         }
 
         if (!emailExist.is_email_verified) {
@@ -221,7 +231,17 @@ module.exports = {
             throw new ApiError(httpStatus.UNAUTHORIZED, 'Account blocked'); // If the user is blocked, throw an error.
         }
 
-        const { otp } = await otpService.createOrReplace(emailExist._id); // Generate and store OTP.
+        const result = await otpService.resendOtp(emailExist._id); // Generate and store OTP with rate limiting.
+
+        if (!result.ok) {
+            if (result.reason === 'too_soon') {
+                throw new ApiError(
+                    httpStatus.TOO_MANY_REQUESTS,
+                    'Please wait before requesting another OTP'
+                );
+            }
+            throw new ApiError(httpStatus.BAD_REQUEST, 'Failed to send OTP');
+        }
 
         const mailSent = await emailService.sendTemplateEmail({
             to: body.email,
@@ -229,7 +249,7 @@ module.exports = {
             template: 'otpEmailTemplate', // <---  TEmplate name in Views folder // ✅ Dynamic template name
             data: {
                 ...body,
-                otp,
+                otp: result.otp,
             },
         });
 

@@ -1,9 +1,12 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { toJSON } = require('./plugins');
+
+const SALT_ROUNDS = 10;
 
 const otpSchema = new mongoose.Schema(
     {
-        otp: {
+        otp_hash: {
             type: String,
             required: true,
             index: true,
@@ -20,12 +23,54 @@ const otpSchema = new mongoose.Schema(
             required: true,
             index: true,
         },
+        attempt_count: {
+            type: Number,
+            default: 0,
+            max: 5,
+        },
+        is_used: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
         versionKey: false,
     }
 );
+
+// Hide sensitive fields on toJSON
+otpSchema.set('toJSON', {
+    transform: (_, ret) => {
+        delete ret.otp_hash;
+        return ret;
+    },
+});
+
+// Hash OTP before saving
+otpSchema.pre('save', async function (next) {
+    if (this.isModified('otp_hash') && this.otp_hash) {
+        this.otp_hash = await bcrypt.hash(this.otp_hash, SALT_ROUNDS);
+    }
+    next();
+});
+
+// Instance method: compare candidate OTP
+otpSchema.methods.compareOtp = async function (candidateOtp) {
+    return bcrypt.compare(candidateOtp, this.otp_hash);
+};
+
+// Static method: create OTP with hashing
+otpSchema.statics.createOtp = async function (userId, plainOtp, expiresAt) {
+    const otpHash = await bcrypt.hash(plainOtp, SALT_ROUNDS);
+    return this.create({
+        otp_hash: otpHash,
+        user: userId,
+        expires_at: expiresAt,
+        attempt_count: 0,
+        is_used: false,
+    });
+};
 
 otpSchema.plugin(toJSON);
 
