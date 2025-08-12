@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { MapPin, Star, ChevronLeft, ChevronRight, Phone, Mail, Share2, Heart, LogIn } from "lucide-react"
 import Link from "next/link"
-import { useFacilityQuery } from "../../../actions/facilities"
+import { useVenueDetails } from "../../../hooks/use-venues"
 import { useAuth } from "../../../contexts/auth-context"
 
 export default function SingleVenuePage({ params }) {
@@ -11,12 +11,80 @@ export default function SingleVenuePage({ params }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const { user } = useAuth()
-  const id = Number(params?.id)
-  const { data: venue, isLoading } = useFacilityQuery(id)
+  const venueId = params?.id
+  const { data: venueResponse, isLoading, error } = useVenueDetails(venueId)
+  
+  // Extract venue data from API response
+  const rawVenue = venueResponse?.data?.venue || null
+  const courts = venueResponse?.data?.courts || []
+  
+  // Map venue properties based on actual API response structure
+  const venue = rawVenue ? {
+    id: rawVenue._id || rawVenue.id,
+    name: rawVenue.venue_name || rawVenue.name || "Unnamed Venue",
+    description: rawVenue.description || rawVenue.about || "No description available",
+    address: rawVenue.address || "Address not available",
+    city: rawVenue.city || "Unknown City",
+    phone: rawVenue.phone || "Contact not available",
+    email: rawVenue.email || "Email not available",
+    venue_type: rawVenue.venue_type || "indoor",
+    venue_status: rawVenue.venue_status || rawVenue.status || "pending",
+    
+    // Handle amenities (could be array or stringified array)
+    amenities: (() => {
+      if (rawVenue.amenities) {
+        if (Array.isArray(rawVenue.amenities)) {
+          return rawVenue.amenities
+        } else if (typeof rawVenue.amenities === 'string') {
+          try {
+            return JSON.parse(rawVenue.amenities)
+          } catch (e) {
+            return [rawVenue.amenities]
+          }
+        }
+      }
+      return []
+    })(),
+    
+    // Handle images
+    images: rawVenue.images || [],
+    gallery: rawVenue.gallery || rawVenue.images?.map(img => ({ url: img, caption: "Venue Image" })) || [],
+    
+    // Handle rating
+    rating: rawVenue.rating?.avg || rawVenue.average_rating || 4.0,
+    totalReviews: rawVenue.rating?.count || rawVenue.total_reviews || 0,
+    
+    // Handle pricing (could be from courts or venue level)
+    price: rawVenue.price || rawVenue.base_price || "500",
+    
+    // Handle sports (extract from courts or use default)
+    sports: rawVenue.sports || rawVenue.available_sports || courts?.map(court => court.sport_type).filter((sport, index, arr) => arr.indexOf(sport) === index) || ["General"],
+    
+    // Handle location
+    location: {
+      lat: rawVenue.location?.coordinates?.latitude || rawVenue.latitude || 0,
+      lng: rawVenue.location?.coordinates?.longitude || rawVenue.longitude || 0,
+      address: rawVenue.address || "Address not available"
+    },
+    
+    // Handle reviews
+    reviews: rawVenue.reviews || [],
+    
+    // Handle operating hours
+    operatingHours: rawVenue.operating_hours || rawVenue.hours || {
+      monday: "6:00 AM - 10:00 PM",
+      tuesday: "6:00 AM - 10:00 PM", 
+      wednesday: "6:00 AM - 10:00 PM",
+      thursday: "6:00 AM - 10:00 PM",
+      friday: "6:00 AM - 10:00 PM",
+      saturday: "6:00 AM - 10:00 PM",
+      sunday: "6:00 AM - 10:00 PM"
+    }
+  } : null
 
   useEffect(() => {
     setCurrentImageIndex(0)
-  }, [id])
+  }, [venueId])
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -83,10 +151,60 @@ export default function SingleVenuePage({ params }) {
     }
   }
 
-  if (isLoading || !venue) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-gray-600">Loading venue...</div>
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading venue details...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="text-center">
+            <p className="text-red-700 font-medium mb-2">Failed to load venue details</p>
+            <p className="text-red-600 text-sm">
+              {error.message || "Unable to fetch venue information. Please try again."}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // No venue found state
+  if (!venue) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+          <div className="text-center">
+            <p className="text-gray-700 font-medium mb-2">Venue not found</p>
+            <p className="text-gray-600 text-sm mb-4">
+              The venue you're looking for doesn't exist or has been removed.
+            </p>
+            <Link
+              href="/venues"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Browse Other Venues
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }
@@ -122,7 +240,7 @@ export default function SingleVenuePage({ params }) {
                   </div>
                   <div className="flex items-center gap-1 text-gray-600">
                     <MapPin className="w-4 h-4" />
-                    <span>{venue.location}</span>
+                    <span>{venue.location.address}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3 text-sm text-gray-600">
@@ -241,15 +359,13 @@ export default function SingleVenuePage({ params }) {
                   <div>
                     <h3 className="text-lg md:text-xl font-semibold mb-4">Operating Hours</h3>
                     <div className="bg-gray-50 p-4 md:p-6 rounded-2xl">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Weekdays:</span>
-                          <span>{venue.operatingHours.weekdays}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Weekends:</span>
-                          <span>{venue.operatingHours.weekends}</span>
-                        </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(venue.operatingHours).map(([day, hours]) => (
+                          <div key={day} className="flex justify-between items-center">
+                            <span className="font-medium capitalize">{day}:</span>
+                            <span>{hours}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -259,20 +375,13 @@ export default function SingleVenuePage({ params }) {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="bg-blue-50 p-4 md:p-6 rounded-2xl text-center">
                         <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
-                          {venue.sports.reduce((total, sport) => total + (Array.isArray(sport.courts) ? sport.courts.length : Number(sport.courts) || 0), 0)}
+                          {courts.length || venue.sports.length}
                         </div>
                         <div className="text-sm text-gray-600">Total Courts</div>
                       </div>
                       <div className="bg-green-50 p-4 md:p-6 rounded-2xl text-center">
                         <div className="text-2xl md:text-3xl font-bold text-green-600 mb-1">
-                          ₹{
-                            (() => {
-                              const prices = venue.sports.flatMap((s) =>
-                                Array.isArray(s.courts) ? s.courts.map((c) => c.price) : []
-                              )
-                              return prices.length ? Math.min(...prices) : 0
-                            })()
-                          }+
+                          ₹{venue.price}
                         </div>
                         <div className="text-sm text-gray-600">Starting Price/hr</div>
                       </div>
@@ -284,16 +393,24 @@ export default function SingleVenuePage({ params }) {
                   </div>
 
                   <div>
-                    <h3 className="text-lg md:text-xl font-semibold mb-4">Rules & Regulations</h3>
+                    <h3 className="text-lg md:text-xl font-semibold mb-4">Venue Type & Status</h3>
                     <div className="bg-gray-50 p-4 md:p-6 rounded-2xl">
-                      <ul className="space-y-2">
-                        {venue.rules.map((rule, index) => (
-                          <li key={index} className="flex items-start gap-3">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-                            <span className="text-gray-700">{rule}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Venue Type:</span>
+                          <span className="capitalize">{venue.venue_type}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Status:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            venue.venue_status === 'approved' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {venue.venue_status === 'approved' ? 'Available' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -303,39 +420,90 @@ export default function SingleVenuePage({ params }) {
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold mb-6">Available Sports & Courts</h2>
                   <div className="space-y-6">
-                    {venue.sports.map((sport, index) => (
-                      <div key={index} className="border border-gray-200 rounded-2xl p-4 md:p-6">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
-                          <div>
-                            <h3 className="text-lg md:text-xl font-semibold mb-2">{sport.name}</h3>
-                            <p className="text-gray-600">{sport.courts?.length ?? 0} courts available</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-500">Starting from</div>
-                            <div className="text-xl md:text-2xl font-bold text-green-600">
-                              ₹{
-                                Array.isArray(sport.courts) && sport.courts.length
-                                  ? Math.min(...sport.courts.map((c) => c.price))
-                                  : (typeof sport.price === 'number' ? sport.price : 0)
-                              }
+                    {courts.length > 0 ? (
+                      // Group courts by sport type
+                      Object.entries(
+                        courts.reduce((acc, court) => {
+                          const sport = court.sport_type || 'General'
+                          if (!acc[sport]) acc[sport] = []
+                          acc[sport].push(court)
+                          return acc
+                        }, {})
+                      ).map(([sportType, sportCourts]) => (
+                        <div key={sportType} className="border border-gray-200 rounded-2xl p-4 md:p-6">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+                            <div>
+                              <h3 className="text-lg md:text-xl font-semibold mb-2 capitalize">{sportType}</h3>
+                              <p className="text-gray-600">{sportCourts.length} court{sportCourts.length > 1 ? 's' : ''} available</p>
+                              <div className="mt-2">
+                                <p className="text-sm text-gray-500">Court Names:</p>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {sportCourts.map((court, idx) => (
+                                    <span key={idx} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                      {court.court_name?.[0] || `Court ${idx + 1}`}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-500">Starting from</div>
+                              <div className="text-xl md:text-2xl font-bold text-green-600">
+                                ₹{Math.min(...sportCourts.flatMap(court => 
+                                  court.availability?.flatMap(avail => 
+                                    avail.time_slots?.map(slot => slot.price) || []
+                                  ) || [venue.price]
+                                ))}
+                              </div>
                             </div>
                           </div>
+                          <button
+                            onClick={handleBookNow}
+                            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+                          >
+                            {user ? (
+                              `Book ${sportType} Court`
+                            ) : (
+                              <>
+                                <LogIn className="w-4 h-4" />
+                                Book {sportType} Court
+                              </>
+                            )}
+                          </button>
                         </div>
-                        <button
-                          onClick={handleBookNow}
-                          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-                        >
-                          {user ? (
-                            `Book ${sport.name} Court`
-                          ) : (
-                            <>
-                              <LogIn className="w-4 h-4" />
-                              Book {sport.name} Court
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      // Fallback to venue sports if no courts data
+                      venue.sports.map((sport, index) => (
+                        <div key={index} className="border border-gray-200 rounded-2xl p-4 md:p-6">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+                            <div>
+                              <h3 className="text-lg md:text-xl font-semibold mb-2 capitalize">{sport}</h3>
+                              <p className="text-gray-600">Available for booking</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-500">Starting from</div>
+                              <div className="text-xl md:text-2xl font-bold text-green-600">
+                                ₹{venue.price}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleBookNow}
+                            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+                          >
+                            {user ? (
+                              `Book ${sport} Court`
+                            ) : (
+                              <>
+                                <LogIn className="w-4 h-4" />
+                                Book {sport} Court
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -450,7 +618,12 @@ export default function SingleVenuePage({ params }) {
                   <div className="space-y-6">
                     <div className="bg-gray-50 p-4 md:p-6 rounded-2xl">
                       <h3 className="font-semibold text-gray-900 mb-2">Address</h3>
-                      <p className="text-gray-700">{venue.address}</p>
+                      <p className="text-gray-700">{venue.location.address}</p>
+                      <div className="mt-2 text-sm text-gray-600">
+                        <p>City: {venue.location.city}</p>
+                        <p>State: {venue.location.state}</p>
+                        <p>Pincode: {venue.location.pincode}</p>
+                      </div>
                     </div>
                     <div className="bg-gray-200 h-64 md:h-80 rounded-2xl flex items-center justify-center">
                       <div className="text-center">
@@ -499,18 +672,59 @@ export default function SingleVenuePage({ params }) {
               <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 sticky top-8">
                 <h3 className="text-lg md:text-xl font-semibold mb-4">Quick Booking</h3>
                 <div className="space-y-4 mb-6">
-                  {venue.sports.map((sport, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                      <div>
-                        <span className="font-medium">{sport.name}</span>
-                        <div className="text-sm text-gray-500">{Array.isArray(sport.courts) ? sport.courts.length : (Number(sport.courts) || 0)} courts</div>
+                  {courts.length > 0 ? (
+                    // Group courts by sport type for sidebar
+                    Object.entries(
+                      courts.reduce((acc, court) => {
+                        const sport = court.sport_type || 'General'
+                        if (!acc[sport]) {
+                          acc[sport] = {
+                            count: 0,
+                            minPrice: Infinity
+                          }
+                        }
+                        acc[sport].count++
+                        
+                        // Find minimum price from availability
+                        const courtPrices = court.availability?.flatMap(avail => 
+                          avail.time_slots?.map(slot => slot.price) || []
+                        ) || []
+                        
+                        if (courtPrices.length > 0) {
+                          acc[sport].minPrice = Math.min(acc[sport].minPrice, ...courtPrices)
+                        } else {
+                          acc[sport].minPrice = Math.min(acc[sport].minPrice, parseInt(venue.price))
+                        }
+                        
+                        return acc
+                      }, {})
+                    ).map(([sportType, sportInfo]) => (
+                      <div key={sportType} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                        <div>
+                          <span className="font-medium capitalize">{sportType}</span>
+                          <div className="text-sm text-gray-500">{sportInfo.count} court{sportInfo.count > 1 ? 's' : ''}</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-green-600 font-semibold">₹{sportInfo.minPrice === Infinity ? venue.price : sportInfo.minPrice}</span>
+                          <div className="text-xs text-gray-500">/hr</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-green-600 font-semibold">₹{sport.price}</span>
-                        <div className="text-xs text-gray-500">/hr</div>
+                    ))
+                  ) : (
+                    // Fallback to venue sports
+                    venue.sports.map((sport, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                        <div>
+                          <span className="font-medium capitalize">{sport}</span>
+                          <div className="text-sm text-gray-500">Available</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-green-600 font-semibold">₹{venue.price}</span>
+                          <div className="text-xs text-gray-500">/hr</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <button
                   onClick={handleBookNow}

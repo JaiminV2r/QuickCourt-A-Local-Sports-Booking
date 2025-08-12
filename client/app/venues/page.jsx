@@ -125,7 +125,7 @@ const sportFromUrl = normalize(searchParams.get("sport"));
                   onChange={(e) => setSelectedSport(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {sports.map((sport) => (
+                  {sports?.map((sport) => (
                     <option key={sport} value={sport}>
                       {sport}
                     </option>
@@ -202,25 +202,54 @@ const sportFromUrl = normalize(searchParams.get("sport"));
             }
           >
             {items?.map((venue) => {
-              const { venue_name, location, rating, _id, price, venue_status, city, sports, distance, nextSlot, image } = venue
-
-              // Extract latitude and longitude from location
-              const latitude = location?.coordinates?.latitude || "N/A"
-              const longitude = location?.coordinates?.longitude || "N/A"
-              const locationText = `Latitude: ${latitude}, Longitude: ${longitude}`
+              // Map venue properties based on actual API response structure
+              const venueId = venue._id || venue.id
+              const venueName = venue.venue_name || venue.name || "Unnamed Venue"
+              const venueCity = venue.city || "Unknown City"
+              const venueAddress = venue.address || "Address not available"
+              const venueStatus = venue.venue_status || venue.status || "pending"
+              const venueType = venue.venue_type || "indoor"
+              const venueDescription = venue.description || venue.about || "No description available"
+              const venuePhone = venue.phone || "Contact not available"
+              
+              // Handle amenities (could be array or stringified array)
+              let venueAmenities = []
+              if (venue.amenities) {
+                if (Array.isArray(venue.amenities)) {
+                  venueAmenities = venue.amenities
+                } else if (typeof venue.amenities === 'string') {
+                  try {
+                    venueAmenities = JSON.parse(venue.amenities)
+                  } catch (e) {
+                    venueAmenities = [venue.amenities]
+                  }
+                }
+              }
+              
+              // Handle sports (extract from courts or use default)
+              const venueSports = venue.sports || venue.available_sports || ["General"]
+              
+              // Handle pricing (could be from courts or venue level)
+              const venuePrice = venue.price || venue.base_price || "500"
+              
+              // Handle rating
+              const venueRating = venue.rating?.avg || venue.average_rating || 4.0
+              
+              // Handle images
+              const venueImage = venue.image || venue.images?.[0] || "/placeholder.svg"
 
               return (
-                <Link key={_id} href={`/venues/${_id}`} className="group">
+                <Link key={venueId} href={`/venues/${venueId}`} className="group">
                   {viewMode === "grid" ? (
                     <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:scale-[1.02]">
                       <div className="relative">
                         <img
-                          src={image || "/placeholder.svg"}
-                          alt={venue_name || "Venue"}
+                          src={venueImage}
+                          alt={venueName}
                           className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-gray-700">
-                          {city || "Nearby"}
+                          {venueCity}
                         </div>
                         <div className="absolute bottom-3 left-3 flex gap-2">
                           <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
@@ -230,13 +259,13 @@ const sportFromUrl = normalize(searchParams.get("sport"));
                         </div>
                       </div>
                       <div className="p-4">
-                        <h3 className="font-bold text-gray-900 mb-2">{venue_name}</h3>
+                        <h3 className="font-bold text-gray-900 mb-2">{venueName}</h3>
                         <div className="flex items-center gap-2 mb-3">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-medium">{rating?.avg}</span>
+                          <span className="text-sm font-medium">{venueRating}</span>
                         </div>
                         <div className="flex flex-wrap gap-1 mb-3">
-                          {(sports || []).map((sport, index) => (
+                          {venueSports.map((sport, index) => (
                             <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                               {sport}
                             </span>
@@ -244,7 +273,7 @@ const sportFromUrl = normalize(searchParams.get("sport"));
                         </div>
                         <div className="flex justify-between items-center">
                           <div>
-                            <span className="text-lg font-bold text-green-600">₹{price}</span>
+                            <span className="text-lg font-bold text-green-600">₹{venuePrice}</span>
                             <span className="text-sm text-gray-500">/hr</span>
                           </div>
                           <div className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium group-hover:bg-blue-700 transition-colors">
@@ -258,44 +287,42 @@ const sportFromUrl = normalize(searchParams.get("sport"));
                       <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative md:w-48 md:h-32 w-full h-48 flex-shrink-0">
                           <img
-                            src={image || "/placeholder.svg"}
-                            alt={venue_name || "Venue"}
+                            src={venueImage}
+                            alt={venueName}
                             className="w-full h-full object-cover rounded-xl"
                           />
                           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium">
-                            {distance || "Nearby"}
+                            {venueCity}
                           </div>
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">{venue_name}</h3>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">{venueName}</h3>
                             <div className="flex items-center gap-2">
                               <div
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${rating?.avg >= 4 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${venueRating >= 4 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                   }`}
                               >
-                                {venue_status === 'approved' ? 'Available' : 'Pending'}
+                                 {venueStatus === 'approved' ? 'Available' : 'Pending'}
                               </div>
-                              {nextSlot && (
-                                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                  Next: {nextSlot}
-                                </div>
-                              )}
+                              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                {venueType.charAt(0).toUpperCase() + venueType.slice(1)}
+                              </div>
                             </div>
                           </div>
-                          <p className="text-gray-600 mb-3">{locationText}</p> {/* Displaying coordinates */}
+                          <p className="text-gray-600 mb-3">{venueDescription}</p>
                           <div className="flex items-center gap-4 mb-3">
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm text-gray-600">{locationText}</span> {/* Displaying coordinates */}
+                              <span className="text-sm text-gray-600">{venueAddress}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium">{rating?.avg}</span>
+                              <span className="text-sm font-medium">{venueRating}</span>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {(sports || []).map((sport, index) => (
+                            {venueSports.map((sport, index) => (
                               <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                                 {sport}
                               </span>
@@ -303,11 +330,11 @@ const sportFromUrl = normalize(searchParams.get("sport"));
                           </div>
                           <div className="flex justify-between items-center">
                             <div>
-                              <span className="text-2xl font-bold text-green-600">₹{price}</span>
+                              <span className="text-2xl font-bold text-green-600">₹{venuePrice}</span>
                               <span className="text-sm text-gray-500">/hr</span>
                             </div>
                             <Link
-                              href={`/venues/${_id}`}
+                              href={`/venues/${venueId}`}
                               className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
                             >
                               View Details

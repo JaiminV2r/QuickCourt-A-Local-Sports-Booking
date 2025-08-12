@@ -25,6 +25,12 @@ api.interceptors.request.use((config) => {
       // ignore JSON parse error
     }
   }
+  
+  // Handle FormData - remove Content-Type to let browser set it with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+  
   return config
 })
 
@@ -61,6 +67,25 @@ export async function get(url, params, config) {
   const client = chooseClient(url)
   const res = await client.get(url, { params, ...(config ?? {}) })
   return res.data
+}
+
+// Public API call that doesn't require authentication and won't redirect on 401
+export async function getPublic(url, params, config) {
+  try {
+    const publicApi = axios.create({
+      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+      withCredentials: false,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    const res = await publicApi.get(url, { params, ...(config ?? {}) })
+    return res.data
+  } catch (error) {
+    // Don't redirect on 401 for public calls, just throw the error
+    throw error
+  }
 }
 
 export async function post(url, data, config) {
