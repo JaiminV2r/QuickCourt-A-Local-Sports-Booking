@@ -186,7 +186,7 @@ module.exports = {
         });
     }),
     getAllApprovedVenues: catchAsync(async (req, res) => {
-        let { page = 1, limit = 10, search = '' } = req.query;
+        let { page = 1, limit = 10, search = '', sport_type } = req.query;
 
         let filter = {
             deleted_at: null,
@@ -199,6 +199,10 @@ module.exports = {
                 { venue_name: { $regex: search, $options: 'i' } },
                 { city: { $regex: search, $options: 'i' } }
             );
+        }
+
+        if(sport_type){
+            filter.sports =  {$in: [sport_type]}
         }
 
         if (!filter.$or.length) delete filter.$or;
