@@ -76,7 +76,7 @@ module.exports = {
         venue.venue_status = VENUE_STATUS.PENDING;
         venue.starting_price_per_hour =
             req.body.starting_price_per_hour || venue.starting_price_per_hour;
-            venue.phone = req.body.phone || venue.phone;
+        venue.phone = req.body.phone || venue.phone;
 
         if (remove_images?.length) {
             fileService.deleteFiles(
@@ -156,7 +156,45 @@ module.exports = {
                 },
             },
             {
+                $set: {
+                    price: {
+                        $avg: {
+                            $reduce: {
+                                input: {
+                                    $reduce: {
+                                        input: {
+                                            $map: {
+                                                input: '$courts',
+                                                as: 'c',
+                                                in: {
+                                                    $map: {
+                                                        input: '$$c.availability',
+                                                        as: 'a',
+                                                        in: {
+                                                            $map: {
+                                                                input: '$$a.time_slots',
+                                                                as: 't',
+                                                                in: '$$t.price',
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 2D
+                                    },
+                                },
+                                initialValue: [],
+                                in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 1D
+                            },
+                        },
+                    },
+                },
+            },
+            {
                 $addFields: {
+                    price: { $ifNull: ['$price', 0] },
                     images: {
                         $map: {
                             input: '$images',
@@ -212,11 +250,7 @@ module.exports = {
 
         // Fetch venues with pagination
 
-        const pagination = paginationQuery(options);
-        const [venuesData] = await venueService.aggregate([
-            {
-                $match: filter,
-            },
+        const pagination = paginationQuery(options, [
             {
                 $lookup: {
                     from: 'courts',
@@ -224,6 +258,65 @@ module.exports = {
                     foreignField: 'venue_id',
                     as: 'courts',
                 },
+            },
+            {
+                $set: {
+                    price: {
+                        $avg: {
+                            $reduce: {
+                                input: {
+                                    $reduce: {
+                                        input: {
+                                            $map: {
+                                                input: '$courts',
+                                                as: 'c',
+                                                in: {
+                                                    $map: {
+                                                        input: '$$c.availability',
+                                                        as: 'a',
+                                                        in: {
+                                                            $map: {
+                                                                input: '$$a.time_slots',
+                                                                as: 't',
+                                                                in: '$$t.price',
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 2D
+                                    },
+                                },
+                                initialValue: [],
+                                in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 1D
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                $addFields: {
+                    price: { $ifNull: ['$price', 0] },
+                    images: {
+                        $map: {
+                            input: '$images',
+                            as: 'image',
+                            in: {
+                                $concat: [
+                                    `${config.base_url}/${FILES_FOLDER.venueImages}/`,
+                                    '$$image',
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        const [venuesData] = await venueService.aggregate([
+            {
+                $match: filter,
             },
             ...pagination,
         ]);

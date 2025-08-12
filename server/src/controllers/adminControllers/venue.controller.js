@@ -3,8 +3,9 @@ const { venueService } = require('../../services');
 const ApiError = require('../../utils/apiError');
 const catchAsync = require('../../utils/catchAsync');
 const { str2regex } = require('../../helper/function.helper');
-const { VENUE_STATUS } = require('../../helper/constant.helper');
+const { VENUE_STATUS, FILES_FOLDER } = require('../../helper/constant.helper');
 const { paginationQuery } = require('../../helper/mongoose.helper');
+const config = require('../../config/config');
 
 /**
  * All venue admin controllers are exported from here 👇
@@ -61,12 +62,6 @@ module.exports = {
                     preserveNullAndEmptyArrays: true,
                 },
             },
-        ]);
-
-        const [venuesData] = await venueService.aggregate([
-            {
-                $match: filter,
-            },
             {
                 $lookup: {
                     from: 'courts',
@@ -74,6 +69,66 @@ module.exports = {
                     foreignField: 'venue_id',
                     as: 'courts',
                 },
+            },
+            {
+                $set: {
+                    price: {
+                        $avg: {
+                            $reduce: {
+                                input: {
+                                    $reduce: {
+                                        input: {
+                                            $map: {
+                                                input: '$courts',
+                                                as: 'c',
+                                                in: {
+                                                    $map: {
+                                                        input: '$$c.availability',
+                                                        as: 'a',
+                                                        in: {
+                                                            $map: {
+                                                                input: '$$a.time_slots',
+                                                                as: 't',
+                                                                in: '$$t.price',
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 2D
+                                    },
+                                },
+                                initialValue: [],
+                                in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 1D
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                $addFields: {
+                    price: { $ifNull: ['$price', 0] },
+                    images: {
+                        $map: {
+                            input: '$images',
+                            as: 'image',
+                            in: {
+                                $concat: [
+                                    `${config.base_url}/${FILES_FOLDER.venueImages}/`,
+                                    '$$image',
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+
+        const [venuesData] = await venueService.aggregate([
+            {
+                $match: filter,
             },
             ...pagination,
         ]);
