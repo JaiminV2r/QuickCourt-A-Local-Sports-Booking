@@ -286,7 +286,6 @@ export default function AdminFacilitiesPage() {
 
         {/* Facilities List */}
         <TabsContent value={activeTab} className="space-y-4">
-        {console.log('🔥🔥🔥🔥facilities🔥🔥🔥🔥🔥',facilities)}
 
           {isLoading ? (
             // Loading skeletons

@@ -66,7 +66,6 @@ export function AuthProvider({ children }) {
     }
     
     if (storedUser) {
-      console.log('🔥🔥🔥🔥user🔥🔥🔥🔥🔥', storedUser)
       setUser(storedUser)
       // Also sync to localStorage for consistency
       localStorage.setItem("quickcourt_user", JSON.stringify(storedUser))

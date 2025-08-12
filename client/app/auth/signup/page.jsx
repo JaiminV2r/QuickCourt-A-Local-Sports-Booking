@@ -73,7 +73,6 @@ export default function SignupPage() {
         const res = await verifyOTP({ email: formData.email, otp: code })
         if (res?.success && res?.data?.user) {
           toast.success("Account created. Email verified.")
-          console.log('🔥🔥🔥🔥res.data.user🔥🔥🔥🔥🔥',res.data.user);
           // Redirect based on user role
           const userRole = res.data.user.role.role
           if (userRole === 'Admin') {
@@ -92,6 +91,62 @@ export default function SignupPage() {
         toast.error(message)
       } finally {
         setVerifying(false)
+      }
+    }
+  }
+
+  const handleOtpKeyDown = (index, e) => {
+    // Handle backspace to move to previous input
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`)
+      if (prevInput) {
+        prevInput.focus()
+        // Clear the previous input as well
+        const newOtp = [...otp]
+        newOtp[index - 1] = ""
+        setOtp(newOtp)
+      }
+    }
+  }
+
+  const handleOtpPaste = async (e) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '') // Remove non-digits
+    
+    if (pastedData.length === 6) {
+      const newOtp = pastedData.split('').slice(0, 6)
+      setOtp(newOtp)
+      
+      // Focus the last input
+      const lastInput = document.getElementById(`otp-5`)
+      if (lastInput) lastInput.focus()
+      
+      // Auto-verify the pasted code
+      if (!verifying) {
+        setVerifying(true)
+        try {
+          const res = await verifyOTP({ email: formData.email, otp: pastedData })
+          if (res?.success && res?.data?.user) {
+            toast.success("Account created. Email verified.")
+            // Redirect based on user role
+            const userRole = res.data.user.role.role
+            if (userRole === 'Admin') {
+              router.replace("/admin")
+            } else if (userRole === 'Facility Owner') {
+              router.replace("/owner")
+            } else {
+              router.replace("/")
+            }
+          } else {
+            const message = res?.message || 'OTP invalid'
+            toast.error(message)
+          }
+        } catch (err) {
+          const message = err?.response?.data?.message || 'OTP verification failed'
+          toast.error(message)
+        } finally {
+          setVerifying(false)
+        }
       }
     }
   }
@@ -275,6 +330,8 @@ export default function SignupPage() {
                       type="text"
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                      onPaste={handleOtpPaste}
                       disabled={verifying}
                       className="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       maxLength={1}

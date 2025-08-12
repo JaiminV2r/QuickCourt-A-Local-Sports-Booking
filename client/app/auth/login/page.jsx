@@ -30,11 +30,9 @@ export default function LoginPage() {
       const res = await login(values.email, values.password)
       if (res?.success && res?.data?.user) {
         toast.success("Signed in. Welcome back!")
-        console.log('🔥🔥🔥🔥res.data.user🔥🔥🔥🔥🔥',res.data.user);
         
         // Redirect based on user role
         const userRole = res.data.user.role.role
-        console.log('🔥🔥🔥🔥userRole🔥🔥🔥🔥🔥',userRole);
 
         if (userRole === ROLES.admin) {
           router.replace("/admin")

@@ -72,7 +72,7 @@ module.exports = {
      */
     verifyOtp: catchAsync(async (req, res) => {
         const { email, otp } = req.body;
-
+        console.log('🔥🔥🔥🔥otp🔥🔥🔥🔥🔥',otp);
         let emailExist = await userService.get(
             { email, deleted_at: null },
             {},
@@ -93,6 +93,7 @@ module.exports = {
         }
 
         const verify = await otpService.verifyAndConsume(emailExist._id, otp);
+        console.log('🔥🔥🔥🔥verify🔥🔥🔥🔥🔥',verify);
         if (!verify.ok) {
             switch (verify.reason) {
                 case 'expired':
