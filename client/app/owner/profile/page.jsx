@@ -5,6 +5,7 @@ import { Formik, Form } from "formik"
 import * as Yup from "yup"
 import TextField from "../../../components/formik/TextField"
 import { User, Mail, Phone, Building, Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 const profileSchema = Yup.object({
   name: Yup.string().min(2, 'Enter your full name').required('Name is required'),
@@ -15,7 +16,8 @@ const profileSchema = Yup.object({
 
 export default function OwnerProfilePage() {
   const [loading, setLoading] = useState(false)
-  const initialValues = { name: "Facility Owner", email: "owner@demo.com", phone: "+91 9876543211", organization: "My Sports Group" }
+  const { user } = useAuth()
+  const initialValues = { name: user.name, email: user.email }
 
   const onSubmit = async () => {
     setLoading(true)
@@ -40,10 +42,10 @@ export default function OwnerProfilePage() {
             <Form className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TextField name="name" type="text" label="Full Name" leftIcon={User} placeholder="Enter your full name" />
               <TextField name="email" type="email" label="Email" leftIcon={Mail} placeholder="Enter your email" />
-              <TextField name="phone" type="text" label="Phone" leftIcon={Phone} placeholder="Enter phone number" />
-              <TextField name="organization" type="text" label="Organization" leftIcon={Building} placeholder="Org/Company (optional)" />
+              {/* <TextField name="phone" type="text" label="Phone" leftIcon={Phone} placeholder="Enter phone number" />
+              <TextField name="organization" type="text" label="Organization" leftIcon={Building} placeholder="Org/Company (optional)" /> */}
 
-              <div className="md:col-span-2 flex justify-end">
+              {/* <div className="md:col-span-2 flex justify-end">
                 <button type="submit" disabled={loading} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                   {loading ? (
                     <>
@@ -54,7 +56,7 @@ export default function OwnerProfilePage() {
                     'Save Changes'
                   )}
                 </button>
-              </div>
+              </div> */}
             </Form>
           </Formik>
         </div>
