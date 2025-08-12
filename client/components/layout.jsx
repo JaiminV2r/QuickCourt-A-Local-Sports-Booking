@@ -91,8 +91,7 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                     <User className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium text-gray-900">{user.full_name}</div>
-                    <div className="text-gray-500">{user.email}</div>
+                    <div className="font-medium text-gray-900">{user.name}</div>
                   </div>
                 </div>
                 <button
@@ -170,8 +169,7 @@ function Header({ user, onLogout, isMobileMenuOpen, setIsMobileMenuOpen, getNavI
                       <User className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="text-sm">
-                      <div className="font-medium text-gray-900">{user.full_name}</div>
-                      <div className="text-gray-500 ">{user.email}</div>
+                      <div className="font-medium text-gray-900">{user.name}</div>
                     </div>
                   </div>
                   <button
@@ -276,7 +274,7 @@ function LayoutInner({ children }) {
           { href: "/admin/facilities", label: "Facilities", icon: Building },
           { href: "/admin/users", label: "Users", icon: Users },
           // { href: "/admin/reports", label: "Reports", icon: FileText },
-          { href: "/admin/settings", label: "Settings", icon: Settings },
+          // { href: "/admin/settings", label: "Settings", icon: Settings },
         ]
       case ROLES.facility_owner:
         return [

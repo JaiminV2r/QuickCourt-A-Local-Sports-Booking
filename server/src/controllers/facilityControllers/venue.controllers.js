@@ -29,7 +29,7 @@ module.exports = {
             // optional: venue_status stays default (PENDING)
         };
 
-        if (files.length) {
+        if (files?.length) {
             const { name } = await fileService.saveFile({
                 file: files,
                 folderName: FILES_FOLDER.venueImages,
@@ -157,7 +157,45 @@ module.exports = {
                 },
             },
             {
+                $set: {
+                    price: {
+                        $avg: {
+                            $reduce: {
+                                input: {
+                                    $reduce: {
+                                        input: {
+                                            $map: {
+                                                input: '$courts',
+                                                as: 'c',
+                                                in: {
+                                                    $map: {
+                                                        input: '$$c.availability',
+                                                        as: 'a',
+                                                        in: {
+                                                            $map: {
+                                                                input: '$$a.time_slots',
+                                                                as: 't',
+                                                                in: '$$t.price',
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 2D
+                                    },
+                                },
+                                initialValue: [],
+                                in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 1D
+                            },
+                        },
+                    },
+                },
+            },
+            {
                 $addFields: {
+                    price: { $ifNull: ['$price', 0] },
                     images: {
                         $map: {
                             input: '$images',
@@ -223,11 +261,7 @@ module.exports = {
 
         // Fetch venues with pagination
 
-        const pagination = paginationQuery(options);
-        const [venuesData] = await venueService.aggregate([
-            {
-                $match: filter,
-            },
+        const pagination = paginationQuery(options, [
             {
                 $lookup: {
                     from: 'courts',
@@ -238,6 +272,65 @@ module.exports = {
                     ],
                     as: 'courts',
                 },
+            },
+            {
+                $set: {
+                    price: {
+                        $avg: {
+                            $reduce: {
+                                input: {
+                                    $reduce: {
+                                        input: {
+                                            $map: {
+                                                input: '$courts',
+                                                as: 'c',
+                                                in: {
+                                                    $map: {
+                                                        input: '$$c.availability',
+                                                        as: 'a',
+                                                        in: {
+                                                            $map: {
+                                                                input: '$$a.time_slots',
+                                                                as: 't',
+                                                                in: '$$t.price',
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 2D
+                                    },
+                                },
+                                initialValue: [],
+                                in: { $concatArrays: ['$$value', '$$this'] }, // flatten to 1D
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                $addFields: {
+                    price: { $ifNull: ['$price', 0] },
+                    images: {
+                        $map: {
+                            input: '$images',
+                            as: 'image',
+                            in: {
+                                $concat: [
+                                    `${config.base_url}/${FILES_FOLDER.venueImages}/`,
+                                    '$$image',
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        const [venuesData] = await venueService.aggregate([
+            {
+                $match: filter,
             },
             ...pagination,
         ]);
