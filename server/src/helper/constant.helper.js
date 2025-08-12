@@ -34,15 +34,14 @@ module.exports = {
         large: { type: 'large', size: [888, 595] },
         small: { type: 'small', size: [84, 48] },
     },
-      BOOKING: {
-        STATUS : {
-            PENDING: 'pending',
-            CONFIRMED: 'confirmed',
-            CANCELLED: 'cancelled',
-        }
+    BOOKING_STATUS: {
+        PENDING: 'Pending',
+        CONFIRMED: 'Confirmed',
+        CANCELLED: 'Cancelled',
+        COMPLETED: 'Completed',
     },
 
-    FILE_FOLDERS:{
+    FILE_FOLDERS: {
         USER: 'user',
         AVATAR: 'avatar',
         VENUE: 'venue',
@@ -55,30 +54,23 @@ module.exports = {
         REJECTED: 'rejected',
     },
 
-    SPORT_TYPE: [
-        'Badminton',
-        'Football',
-        'Basketball',
-        'Tennis',
-        'Cricket',
-        'Table Tennis',
-    ],
+    SPORT_TYPE: ['Badminton', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Table Tennis'],
 
-    AMENITIES:[
-        'WiFi',
-        'Parking',
-        'Food',
-        'Drinks',
-        'Equipment'
-    ],
+    AMENITIES: ['WiFi', 'Parking', 'Food', 'Drinks', 'Equipment'],
 
-    SPORT_TYPE_ICON:{
-        'Badminton': '🏸',
-        'Football': '⚽',
-        'Basketball': '🏀',
-        'Tennis': '🎾',
-        'Cricket': '🏏',
+    SPORT_TYPE_ICON: {
+        Badminton: '🏸',
+        Football: '⚽',
+        Basketball: '🏀',
+        Tennis: '🎾',
+        Cricket: '🏏',
         'Table Tennis': '🏓',
     },
-
-}
+    PAYMENT_STATUS: {
+        PENDING: 'Pending',
+        PAID: 'Paid',
+        FAILED: 'Failed',
+        REFUNDED: 'Refunded',
+        PARTIAL: 'Partial',
+    },
+};

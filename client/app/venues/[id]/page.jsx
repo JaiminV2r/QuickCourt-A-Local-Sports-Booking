@@ -50,10 +50,10 @@ export default function SingleVenuePage({ params }) {
     }
   }
 
-  const handleBookNow = () => {
+  const handleBookNow = (sportType) => {
     if (user) {
-      // User is logged in, redirect to booking page
-      window.location.href = `/venues/${venue.id}/book`
+      // User is logged in, redirect to booking page with sport type
+      window.location.href = `/book-venue?venueId=${venue.id}&sportType=${sportType}`
     } else {
       // User is not logged in, redirect to login with redirect back to this page
       window.location.href = "/auth/login?redirect=" + encodeURIComponent(window.location.pathname)
@@ -322,7 +322,7 @@ export default function SingleVenuePage({ params }) {
                           </div>
                         </div>
                         <button
-                          onClick={handleBookNow}
+                          onClick={() => handleBookNow(sport.name)}
                           className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
                         >
                           {user ? (
